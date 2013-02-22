@@ -1,0 +1,40 @@
+<div class="hero-unit">
+  <h1>Super Hexagon stats</h1>
+  <p>
+    Welcome! This is still an early beta, so not everything works.
+    <a href="https://github.com/TomasDuda/super-hexagon-stats">Contribute on GitHub!</a>
+  </p>
+</div>
+
+<div class="page-header">
+  <h2>Top 10 players</h2>
+</div>
+
+<div class="row" ng-repeat="difficultyRow in difficultyRows">
+  <div class="span4" ng-repeat="difficulty in difficultyRow">
+    <h3>{{difficulty}}</h3>
+    <div ui-if="top10Loading[difficulty]" class="alert alert-info">Loading...</div>
+    <div ui-if="!top10Loading[difficulty] && !top10[difficulty]" class="alert">No leaderboard entries found.</div>
+    <div ui-if="!top10Loading[difficulty] && top10[difficulty].length > 0">
+      <table class="table table table-hover">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th></th>
+            <th>Name</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="entry in top10[difficulty]">
+            <td>{{ $index + 1 }}</td>
+            <td><img ng-src="{{ $root.getAvatar(top10Users[entry.steamid].avatar) }}"></td>
+            <td><a ng-href="#/profiles/{{ entry.steamid }}">{{ top10Users[entry.steamid].username }}</a></td>
+            <td>{{ entry.time }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <a class="btn" ng-href="#/leaderboard/{{ difficulty.replace(' ', '_') }}">Show all</a>
+    </div>
+  </div>
+</div>

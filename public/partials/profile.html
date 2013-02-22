@@ -1,0 +1,93 @@
+<div ui-if="!userLoading && !user" class="alert alert-error">User not found.</div>
+<div ui-if="userLoading" class="alert alert-info">Loading user...</div>
+
+<div ui-if="user">
+  <div class="page-header">
+    <div class="pull-right" style="padding-top: 5px;">
+      <a class="btn btn-large" ng-href="http://steamcommunity.com/profiles/{{user._id}}/">View Steam profile</a>
+    </div>
+    <h1>
+      <img ng-src="{{$root.getAvatar(user.avatar, 'medium')}}" style="padding-right: 10px;">{{user.username}}
+    </h1>
+  </div>
+
+  <div class="row">
+    <tabs>
+      <pane heading="{{user.username}}'s profile">
+        <div ng-controller="ProfileLeaderboardCtrl">
+          <h2>Leaderboard</h2>
+          <div ui-if="leaderboardLoading" class="alert alert-info">Loading...</div>
+          <div ui-if="!leaderboardLoading && !leaderboard" class="alert">Error while loading leaderboard. Try to reload the page.</div>
+          <div ui-if="!leaderboardLoading && leaderboard">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th ng-click="sort.changeSorting('difficulty')" class="sortable"><i ng-class="sort.sortClass('difficulty')"></i>Difficulty</th>
+                  <th ng-click="sort.changeSorting('time')" class="sortable"><i ng-class="sort.sortClass('time')"></i>Time</th>
+                  <th ng-click="sort.changeSorting('rank')" class="sortable"><i ng-class="sort.sortClass('rank')"></i>Global position</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="entry in leaderboard">
+                  <td>{{entry.difficulty}}</td>
+                  <td>{{entry.time}}</td>
+                  <td>{{entry.rank}}</td>
+                </tr>
+              </tbody>
+            </table>
+           </div>
+          </div>
+      </pane>
+      <pane heading="Friends">
+        <div ng-controller="ProfileFriendsCtrl">
+          <h2>Friends</h2>
+
+          <div ui-if="loadingAllFriends" class="alert alert-info">Loading...</div>
+
+          <div ui-if="!loadingAllFriends && !allFriends" class="alert">Error while loading friends. {{ user.username }}'s profile may be private.</div>
+
+          <div ui-if="allFriends">
+            <p>
+              {{ user.username }} has <strong>{{allFriends.length}}</strong> friends.
+              <span ui-if="uniqueUsersCount"><strong>{{ uniqueUsersCount }}</strong> of them have entries in the leaderboard for current filters.</span>
+            </p>
+
+            <div class="row-fluid">
+              <ul class="nav nav-pills span10">
+                <li ng-class="{active: viewDifficulties['all']}"><a href="" ng-click="switchDifficultyView('all')">View all</a></li>
+                <li ng-repeat="difficulty in $root.difficulties" ng-class="{active: viewDifficulties[difficulty]}">
+                  <a href="" ng-click="switchDifficultyView(difficulty)">{{ difficulty }}</a>
+                </li>
+              </ul>
+            </div>
+
+            <div ui-if="leaderboardLoading" class="alert alert-info">Loading...</div>
+
+            <div ui-if="!leaderboardLoading && !leaderboard" class="alert">Error while loading friend leaderboard.</div>
+
+            <table class="table table-hover" ui-if="!leaderboardLoading && leaderboard">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th ng-click="sort.changeSorting('username')" class="sortable"><i ng-class="sort.sortClass('username')"></i>Friend</th>
+                  <th ng-click="sort.changeSorting('difficulty')" class="sortable"><i ng-class="sort.sortClass('difficulty')"></i>Difficulty</th>
+                  <th ng-click="sort.changeSorting('time')" class="sortable"><i ng-class="sort.sortClass('time')"></i>Time</th>
+                  <th ng-click="sort.changeSorting('rank')" class="sortable"><i ng-class="sort.sortClass('rank')"></i>Global position</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="entry in leaderboard">
+                  <td><img ng-src="{{ $root.getAvatar(entry.avatar) }}"></td>
+                  <td><a ng-href="#/profiles/{{ entry.steamid }}">{{ entry.username }}</a></td>
+                  <td>{{ entry.difficulty }}</td>
+                  <td>{{ entry.time }}</td>
+                  <td>{{ entry.rank }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </pane>
+    </tabs>
+  </div>
+</div>
