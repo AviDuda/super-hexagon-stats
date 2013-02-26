@@ -8,9 +8,9 @@
     </div>
     <h1>
       <img ng-src="{{$root.getAvatar(user.avatar, 'medium')}}" style="padding-right: 10px;">{{user.username}}
+      <small ui-if="!user.public">Private profile</small>
     </h1>
   </div>
-
   <div class="row">
     <tabs>
       <pane heading="{{user.username}}'s profile">
@@ -18,7 +18,8 @@
           <h2>Leaderboard</h2>
           <div ui-if="leaderboardLoading" class="alert alert-info">Loading...</div>
           <div ui-if="!leaderboardLoading && !leaderboard" class="alert">Error while loading leaderboard. Try to reload the page.</div>
-          <div ui-if="!leaderboardLoading && leaderboard">
+          <div ui-if="!leaderboardLoading && leaderboard.length == 0" class="alert alert-info">No entries found.</div>
+          <div ui-if="!leaderboardLoading && leaderboard.length > 0">
             <table class="table table-hover">
               <thead>
                 <tr>
@@ -29,16 +30,16 @@
               </thead>
               <tbody>
                 <tr ng-repeat="entry in leaderboard">
-                  <td>{{entry.difficulty}}</td>
-                  <td>{{entry.time}}</td>
-                  <td>{{entry.rank}}</td>
+                  <td>{{ entry.difficulty }}</td>
+                  <td>{{ entry.time.toFixed(2) }}</td>
+                  <td>{{ entry.rank }}</td>
                 </tr>
               </tbody>
             </table>
            </div>
           </div>
       </pane>
-      <pane heading="Friends">
+      <pane heading="Friends" ui-if="user.public">
         <div ng-controller="ProfileFriendsCtrl">
           <h2>Friends</h2>
 
@@ -49,7 +50,7 @@
           <div ui-if="allFriends">
             <p>
               {{ user.username }} has <strong>{{allFriends.length}}</strong> friends.
-              <span ui-if="uniqueUsersCount"><strong>{{ uniqueUsersCount }}</strong> of them have entries in the leaderboard for current filters.</span>
+              <strong>{{ uniqueUsersCount || 0 }}</strong> of them have entries in the leaderboard for current filters.
             </p>
 
             <div class="row-fluid">
@@ -80,7 +81,7 @@
                   <td><img ng-src="{{ $root.getAvatar(entry.avatar) }}"></td>
                   <td><a ng-href="#/profiles/{{ entry.steamid }}">{{ entry.username }}</a></td>
                   <td>{{ entry.difficulty }}</td>
-                  <td>{{ entry.time }}</td>
+                  <td>{{ entry.time.toFixed(2) }}</td>
                   <td>{{ entry.rank }}</td>
                 </tr>
               </tbody>

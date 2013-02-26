@@ -20,13 +20,17 @@ task 'hex:update_data' do
 
   puts "(#{(Time.now - time_start).to_i} seconds) Connecting to database."
 
-  db = MongoClient.from_uri(ENV['MONGOLAB_URL']).db(ENV['MONGOLAB_DB'])
+  connection = MongoClient.from_uri(ENV['DATABASE_URL'])
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Setting maintenance mode on."
+  db = connection.db(ENV['DATABASE_NAME'])
 
-  # better to warn few minutes before DB update happens
+  puts "(#{(Time.now - time_start).to_i} seconds) Removing leaderboard_update collection and creating indexes."
 
-  db.collection('settings').update({}, { key: 'maintenance', value: true }, { upsert: true })
+  c = db.collection('leaderboard_update')
+  c.drop
+  c.create_index 'difficulty'
+  c.create_index 'steamid', drop_dups: true
+  c.create_index [['time', Mongo::ASCENDING], ['time', Mongo::DESCENDING]]
 
   puts "(#{(Time.now - time_start).to_i} seconds) Fetching leaderboards."
 
@@ -34,11 +38,9 @@ task 'hex:update_data' do
 
   per_request = 5000 # Steam API limit
 
-  leaderboard_entries = []
-  steamids = []
+  leaderboard_entries_count = 0
 
-  threads = []
-  running_threads = 0
+  steamids = []
 
   leaderboards = GameLeaderboard.leaderboards('SuperHexagon').compact
 
@@ -51,52 +53,59 @@ task 'hex:update_data' do
       difficulty = 'H' + difficulty[1..-1].downcase
     end
 
-    print "(#{(Time.now - time_start).to_i} seconds) Leaderboard #{difficulty} has #{leaderboard.entry_count} entries.\n"
+    puts "(#{(Time.now - time_start).to_i} seconds) Leaderboard #{difficulty} has #{leaderboard.entry_count} entries."
+
+    leaderboard_entries_count += leaderboard.entry_count
 
     request_start = 1
 
+    # it's about 30 secs faster when using threads (with DB inserts), but it's much safer without threads
+
     while request_start < leaderboard.entry_count
-      # create a thread for each entry range request
-      threads << Thread.new(request_start) do |start|
-        running_threads += 1
-        thread_num = running_threads
-        thread_num.freeze
+      leaderboard_entries = []
 
-        print "(#{(Time.now - time_start).to_i} seconds) Making thread # #{thread_num} for #{difficulty} and entry range #{start}-#{start + per_request}\n"
-
-        print "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Loading #{start}-#{start + per_request}\n"
-        retriable tries: 3, interval: 10 do
-          leaderboard.entry_range(start, start + per_request).compact.each do |entry|
-            score = ('%.2f' % (entry.score / 60.00))
-            leaderboard_entries << {
-              difficulty: difficulty,
-              steamid: entry.steam_id.steam_id64.to_s,
-              time: score.to_f,
-              rank: entry.rank
-            }
-            steamids << entry.steam_id.steam_id64.to_s
-          end
+      puts "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Loading #{request_start}-#{request_start + per_request}"
+      retriable tries: 3, interval: 5 do
+        leaderboard.entry_range(request_start, request_start + per_request).compact.each do |entry|
+          score = ('%.2f' % (entry.score / 60.00))
+          leaderboard_entries << {
+            difficulty: difficulty,
+            steamid: entry.steam_id.steam_id64.to_s,
+            time: score.to_f,
+            rank: entry.rank
+          }
+          steamids << entry.steam_id.steam_id64.to_s
         end
-
-        print "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Done #{start}-#{start + per_request}\n"
       end
-      request_start += per_request
+
+
+      puts "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Saving #{request_start}-#{request_start + per_request} to database"
+
+      c.insert leaderboard_entries
+
+      puts "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Done #{request_start}-#{request_start + per_request}"
+
+      request_start += per_request + 1
     end
   end
-  threads.each { |t| t.join }
-  threads = []
+
+  puts "(#{(Time.now - time_start).to_i} seconds) Removing users_update collection."
+
+  c = db.collection('users_update')
+  c.drop
 
   puts "(#{(Time.now - time_start).to_i} seconds) Fetching Steam usernames and friends."
 
   steamids.uniq!
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Found #{steamids.count} unique Steam IDs (#{steamids.count / 100} requests to Steam API)."
+  puts "(#{(Time.now - time_start).to_i} seconds) Found #{steamids.count} unique Steam IDs."
+
+  thread_count = 40
+  threads = []
+  per_thread = (steamids.count / thread_count).ceil
+  request_start = 0
 
   users = []
-
-  thread_count = 40 # change this if it's too slow
-  per_thread = steamids.count / (thread_count - 1)
-  request_start = 0
 
   # create thread_count threads for requests so it's faster
   thread_count.times do |i|
@@ -114,52 +123,47 @@ task 'hex:update_data' do
             users << {
               _id: player['steamid'].to_s,
               username: player['personaname'],
-              avatar: player['avatar'][67..-5] # get just folder and file without extension (e.g. "te/test" for "http://media.steampowered.com/steamcommunity/public/images/avatars/te/test.jpg")
+              avatar: player['avatar'][67..-5], # get just folder and file without extension (e.g. "te/test" for "http://media.steampowered.com/steamcommunity/public/images/avatars/te/test.jpg")
+              public: (player['communityvisibilitystate'] == 3 ? true : false)
             }
           end
         end
       }
+
+      print "(#{(Time.now - time_start).to_i} seconds) Thread #{i+1} for user requests #{start}-#{start+per_thread} done.\n"
     end
-    request_start += per_thread
+    request_start += per_thread + 1
   end
+
   threads.each { |t| t.join }
 
   users.uniq!
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Removing leaderboard collection and creating indexes."
+  print "(#{(Time.now - time_start).to_i} seconds) Adding user entries to database.\n"
 
-  c = db.collection('leaderboard')
-  c.drop
-  c.create_index 'difficulty'
-  c.create_index 'steamid'
-  c.create_index [['time', Mongo::ASCENDING], ['time', Mongo::DESCENDING]]
+  c.insert users
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Adding leaderboard entries to database."
+  puts "(#{(Time.now - time_start).to_i} seconds) Setting maintenance mode on."
 
-  db_per_slice = 50000
+  # maintenance should be short when dropping and renaming collections, but it's still a good idea to set it
+  db.collection('settings').update({ key: 'maintenance' }, { key: 'maintenance', value: true }, { upsert: true })
 
-  leaderboard_entries.each_slice(db_per_slice).with_index do |entries, slice|
-    puts "(#{(Time.now - time_start).to_i} seconds) Saving leaderboard slice #{db_per_slice * slice}-#{db_per_slice * (slice + 1)}."
-    c.insert entries
-  end
+  puts "(#{(Time.now - time_start).to_i} seconds) Dropping the current collections."
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Removing users collection."
+  db.drop_collection 'leaderboard'
+  db.drop_collection 'users'
 
-  c = db.collection('users')
-  c.drop
+  puts "(#{(Time.now - time_start).to_i} seconds) Renaming the update collections to current collections."
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Adding user entries to database."
-
-  users.each_slice(db_per_slice).with_index do |entries, slice|
-    puts "(#{(Time.now - time_start).to_i} seconds) Saving users slice #{db_per_slice * slice}-#{db_per_slice * (slice + 1)}."
-    c.insert entries
-  end
+  db.rename_collection 'leaderboard_update', 'leaderboard'
+  db.rename_collection 'users_update', 'users'
 
   puts "(#{(Time.now - time_start).to_i} seconds) Setting maintenance mode off."
 
-  db.collection('settings').update({}, { key: 'maintenance', value: false }, { upsert: true })
+  db.collection('settings').update({ key: 'maintenance' }, { key: 'maintenance', value: false }, { upsert: true })
+  db.collection('settings').update({ key: 'lastUpdate' }, { key: 'lastUpdate', value: Time.now.utc.to_s }, { upsert: true })
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Done! #{leaderboard_entries.count} leaderboard entries and #{users.count} users added to database."
+  puts "(#{(Time.now - time_start).to_i} seconds) Done! #{leaderboard_entries_count} leaderboard entries and #{steamids.count} users added to database."
 end
 
 namespace :js do

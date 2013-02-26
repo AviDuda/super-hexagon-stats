@@ -1,6 +1,6 @@
 "use strict"
 
-app = angular.module 'hexagonStats', ['ui', 'ui.bootstrap', 'mongolabResourceHttp']
+app = angular.module 'hexagonStats', ['ui', 'ui.bootstrap', 'dbResourceHttp']
 app.config ['$routeProvider', ($routeProvider) ->
   $routeProvider
     .when('/', {templateUrl: 'partials/home.html', controller: 'HomeCtrl'})
@@ -11,24 +11,24 @@ app.config ['$routeProvider', ($routeProvider) ->
     .otherwise({ redirectTo: '/' })
 ]
 
-app.constant 'MONGOLAB_CONFIG', { API_KEY: MONGOLAB_API_KEY, DB_NAME: MONGOLAB_DB }
+app.constant 'DB_CONFIG', { BASE_URL: '/api/db/' }
 
-app.run ['$rootScope', '$location', 'Settings', ($rootScope, $location, Settings) ->
+app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $location, $window, Settings) ->
   $rootScope.difficulties = ['Hexagon', 'Hexagoner', 'Hexagonest', 'Hyper Hexagon', 'Hyper Hexagoner', 'Hyper Hexagonest']
 
   $rootScope.$on '$routeChangeStart', ->
     $rootScope.isViewLoading = true
+
+    Settings.all(
+      (data) ->
+        $rootScope.settings = {}
+        for setting in data
+          $rootScope.settings[setting.key] = setting.value
+    )
   $rootScope.$on '$routeChangeSuccess', ->
     $rootScope.isViewLoading = false
-
-    Settings.query(
-      { key: 'maintenance', value: true },
-      (data) ->
-        if data.length > 0
-          $rootScope.maintenance = true
-        else
-          $rootScope.maintenance = false
-    )
+    if $window._gaq?
+      $window._gaq.push(['_trackPageview', $location.path()]);
 
   $rootScope.getAvatar = (url, size = '') ->
     # size is null (small), medium, full
@@ -42,16 +42,16 @@ app.run ['$rootScope', '$location', 'Settings', ($rootScope, $location, Settings
 
 # factories
 
-app.factory 'Leaderboard', [ '$mongolabResourceHttp', ($mongolabResourceHttp) ->
-  $mongolabResourceHttp 'leaderboard'
+app.factory 'Leaderboard', ['$dbResourceHttp', ($dbResourceHttp) ->
+  $dbResourceHttp 'leaderboard'
 ]
 
-app.factory 'User', [ '$mongolabResourceHttp', ($mongolabResourceHttp) ->
-  $mongolabResourceHttp 'users'
+app.factory 'User', ['$dbResourceHttp', ($dbResourceHttp) ->
+  $dbResourceHttp 'users'
 ]
 
-app.factory 'Settings', [ '$mongolabResourceHttp', ($mongolabResourceHttp) ->
-  $mongolabResourceHttp 'settings'
+app.factory 'Settings', ['$dbResourceHttp', ($dbResourceHttp) ->
+  $dbResourceHttp 'settings'
 ]
 
 # directives
@@ -117,14 +117,17 @@ app.controller 'HomeCtrl', [ '$scope', '$rootScope', 'Leaderboard', 'User', ($sc
 
         user_ids = data.map (entry) -> entry.steamid
 
-        User.query(
-          { _id: { $in: user_ids } },
-          (data) ->
-            for user in data
-              $scope.top10Users[user._id] = user
+        if user_ids.length > 0
+          User.query(
+            { _id: { $in: user_ids } },
+            (data) ->
+              for user in data
+                $scope.top10Users[user._id] = user
 
-            $scope.top10Loading[difficulty] = false
-        )
+              $scope.top10Loading[difficulty] = false
+          )
+        else
+          $scope.top10Loading[difficulty] = false
 
       (data, status) ->
         $scope.top10Loading[difficulty] = false

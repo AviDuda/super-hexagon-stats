@@ -4,9 +4,7 @@
 ENV['STEAM_API_KEY'] = 'HALFLIFE3'
 
 # you can get 0.5 GB free space on https://mongolab.com/
-ENV['MONGOLAB_DB'] = '<dbname>'
-ENV['MONGOLAB_URL'] = "mongodb://<dbuser>:<dbpassword>>@<server>.mongolab.com:43447/#{ENV['MONGOLAB_DB']}"
-ENV['MONGOLAB_API_KEY'] = 'IwAnTrEaDoNlYaPiKeY' # API keys unfortunately have write access
+ENV['DATABASE_NAME'] = '<dbname>'
+ENV['DATABASE_URL'] = "mongodb://<dbuser>:<dbpassword>>@<server>.mongolab.com:<port>/#{ENV['DATABASE_NAME']}"
 
-# used in layout when maintenance is set to true in the settings collection
-ENV['MAINTENANCE_CONTACT'] = '<a href="<URL to your Twitter or anything you want>">contact me</a>'
+ENV['GOOGLE_ANALYTICS_ACCOUNT'] = 'UA-123456789-0'

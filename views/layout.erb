@@ -8,23 +8,19 @@
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.4/angular.min.js"></script>
     <script type="text/javascript" src="javascripts/angular-ui.min.js"></script>
     <script type="text/javascript" src="javascripts/angular-ui-bootstrap-tpls-0.1.0.min.js"></script>
-    <script type="text/javascript" src="javascripts/mongolabResourceHttp.js"></script>
-    <script type="text/javascript">
-      var MONGOLAB_DB = '<%= ENV['MONGOLAB_DB'] %>';
-      var MONGOLAB_API_KEY = '<%= ENV['MONGOLAB_API_KEY'] %>';
-    </script>
+    <script type="text/javascript" src="javascripts/dbResourceHttp.js"></script>
     <script type="text/javascript" src="javascripts/app.js"></script>
   </head>
   <body>
-    <noscript>
-      <h1>Sorry, you need to enable Javascript to use this site.</h1>
-    </noscript>
+    <div id="wrap">
+      <noscript>
+        <h1>Sorry, you need to enable Javascript to use this site.</h1>
+      </noscript>
 
-    <div ui-if="$root.isViewLoading">
-      <div class="alert alert-info" ui-if="$root.isViewLoading">Loading...</div>
-    </div>
+      <div ui-if="$root.isViewLoading">
+        <div class="alert alert-info" ui-if="$root.isViewLoading">Loading...</div>
+      </div>
 
-    <div id="angularContent" ui-if="!$root.isViewLoading">
       <div class="navbar navbar-fixed-top">
         <div class="navbar-inner">
           <div class="container">
@@ -46,20 +42,24 @@
                   <ul class="dropdown-menu">
                     <li activelink="#/leaderboard" noactivelinkindex><a href="#/leaderboard">All leaderboards</a></li>
                     <li class="divider"></li>
-                    <li activelink="#/leaderboard/Hexagon" noactivelinkindex><a href="#/leaderboard/Hexagon">Hexagon</a></li>
+                    <li activelink="#/leaderboard/Hexagon" noactivelinkindex>
+                      <a href="#/leaderboard/Hexagon">Hexagon</a></li>
                     <li activelink="#/leaderboard/Hexagoner"><a href="#/leaderboard/Hexagoner">Hexagoner</a></li>
                     <li activelink="#/leaderboard/Hexagonest"><a href="#/leaderboard/Hexagonest">Hexagonest</a></li>
-                    <li activelink="#/leaderboard/Hyper_Hexagon" noactivelinkindex><a href="#/leaderboard/Hyper_Hexagon">Hyper Hexagon</a></li>
-                    <li activelink="#/leaderboard/Hyper_Hexagoner"><a href="#/leaderboard/Hyper_Hexagoner">Hyper Hexagoner</a></li>
-                    <li activelink="#/leaderboard/Hyper_Hexagonest"><a href="#/leaderboard/Hyper_Hexagonest">Hyper Hexagonest</a></li>
+                    <li activelink="#/leaderboard/Hyper_Hexagon" noactivelinkindex>
+                      <a href="#/leaderboard/Hyper_Hexagon">Hyper Hexagon</a></li>
+                    <li activelink="#/leaderboard/Hyper_Hexagoner">
+                      <a href="#/leaderboard/Hyper_Hexagoner">Hyper Hexagoner</a></li>
+                    <li activelink="#/leaderboard/Hyper_Hexagonest">
+                      <a href="#/leaderboard/Hyper_Hexagonest">Hyper Hexagonest</a></li>
                   </ul>
                 </li>
               </ul>
               <div class="pull-right">
-                  <form class="navbar-search">
-                    <input type="text" class="search-query" placeholder="Custom URL" ng-model="$root.customUrlSearch">
-                    <input type="submit" value="Go" class="btn" style="margin-top: -1px;" ng-click="$root.searchCustomUrl()">
-                  </form>
+                <form class="navbar-search">
+                  <input type="text" class="search-query" placeholder="Custom URL" ng-model="$root.customUrlSearch">
+                  <input type="submit" value="Go" class="btn" style="margin-top: -1px;" ng-click="$root.searchCustomUrl()">
+                </form>
               </div>
             </div>
           </div>
@@ -67,17 +67,43 @@
       </div>
 
       <div class="container">
-        <div ui-if="$root.maintenance" class="alert alert-block">
+        <div ui-if="$root.settings.maintenance" class="alert alert-block">
           <h4>Website is in the maintenance mode.</h4>
-          Don't be surprised if something is broken. If it takes too long (&gt; 10 minutes), <%=  ENV['MAINTENANCE_CONTACT'] %>.
+          Don't be surprised if something is broken. It should take just a few seconds. If it takes too long, <a href="https://twitter.com/tomasduda">ping me on Twitter</a>.
         </div>
-        <div ng-view></div>
+        <div ng-view ui-if="!$root.isViewLoading"></div>
+      </div>
+
+      <div id="push"></div>
+    </div>
+
+    <div id="footer">
+      <div class="container">
+        <div class="pull-left muted">
+          Created by <a href="https://twitter.com/tomasduda">Tomáš Duda</a>. Source code is available on <a href="https://github.com/TomasDuda/super-hexagon-stats">GitHub</a>.
+        </div>
+        <div class="pull-right muted" ui-if="settings.lastUpdate">
+          Latest database update: {{ settings.lastUpdate }}
+        </div>
       </div>
     </div>
 
     <a href="https://github.com/TomasDuda/super-hexagon-stats">
       <img style="position: absolute; top: 40px; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub">
     </a>
+
+    <% if ENV['GOOGLE_ANALYTICS_ACCOUNT'] %>
+      <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', '<%= ENV['GOOGLE_ANALYTICS_ACCOUNT'] %>']);
+
+        (function() {
+          var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+          ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+          var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+      </script>
+    <% end %>
 
   </body>
 </html>

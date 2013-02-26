@@ -1,14 +1,15 @@
-angular.module('mongolabResourceHttp', []).factory('$mongolabResourceHttp', ['MONGOLAB_CONFIG', '$http', function (MONGOLAB_CONFIG, $http) {
+// based on https://github.com/pkozlowski-opensource/angularjs-mongolab-promise
+
+angular.module('dbResourceHttp', []).factory('$dbResourceHttp', ['DB_CONFIG', '$http', function (DB_CONFIG, $http) {
 
     function MongolabResourceFactory(collectionName) {
 
         var config = angular.extend({
-            BASE_URL : 'https://api.mongolab.com/api/1/databases/'
-        }, MONGOLAB_CONFIG);
+            BASE_URL : '/api/db/'
+        }, DB_CONFIG);
 
-        var dbUrl = config.BASE_URL + config.DB_NAME;
-        var collectionUrl = dbUrl + '/collections/' + collectionName;
-        var defaultParams = {apiKey:config.API_KEY};
+        var collectionUrl = config.BASE_URL + collectionName;
+        var defaultParams = {};
 
         var resourceRespTransform = function(data) {
             return new Resource(data);
@@ -83,17 +84,6 @@ angular.module('mongolabResourceHttp', []).factory('$mongolabResourceHttp', ['MO
             });
         };
 
-        Resource.distinct = function (field, queryJson, successcb, errorcb) {
-            var httpPromise = $http.post(dbUrl + '/runCommand', angular.extend({}, queryJson || {}, {
-                distinct:collectionName,
-                key:field}), {
-                params:defaultParams
-            });
-            return promiseThen(httpPromise, successcb, errorcb, function(data){
-                return data.values;
-            });
-        };
-
         Resource.getById = function (id, successcb, errorcb) {
             var httpPromise = $http.get(collectionUrl + '/' + id, {params:defaultParams});
             return promiseThen(httpPromise, successcb, errorcb, resourceRespTransform);
@@ -114,29 +104,6 @@ angular.module('mongolabResourceHttp', []).factory('$mongolabResourceHttp', ['MO
                 return this._id.$oid;
             } else if (this._id) {
                 return this._id;
-            }
-        };
-
-        Resource.prototype.$save = function (successcb, errorcb) {
-            var httpPromise = $http.post(collectionUrl, this, {params:defaultParams});
-            return promiseThen(httpPromise, successcb, errorcb, resourceRespTransform);
-        };
-
-        Resource.prototype.$update = function (successcb, errorcb) {
-            var httpPromise = $http.put(collectionUrl + "/" + this.$id(), angular.extend({}, this, {_id:undefined}), {params:defaultParams});
-            return promiseThen(httpPromise, successcb, errorcb, resourceRespTransform);
-        };
-
-        Resource.prototype.$remove = function (successcb, errorcb) {
-            var httpPromise = $http['delete'](collectionUrl + "/" + this.$id(), {params:defaultParams});
-            return promiseThen(httpPromise, successcb, errorcb, resourceRespTransform);
-        };
-
-        Resource.prototype.$saveOrUpdate = function (savecb, updatecb, errorSavecb, errorUpdatecb) {
-            if (this.$id()) {
-                return this.$update(updatecb, errorUpdatecb);
-            } else {
-                return this.$save(savecb, errorSavecb);
             }
         };
 

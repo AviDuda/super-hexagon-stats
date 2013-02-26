@@ -3,7 +3,7 @@
 
   var app;
 
-  app = angular.module('hexagonStats', ['ui', 'ui.bootstrap', 'mongolabResourceHttp']);
+  app = angular.module('hexagonStats', ['ui', 'ui.bootstrap', 'dbResourceHttp']);
 
   app.config([
     '$routeProvider', function($routeProvider) {
@@ -28,29 +28,31 @@
     }
   ]);
 
-  app.constant('MONGOLAB_CONFIG', {
-    API_KEY: MONGOLAB_API_KEY,
-    DB_NAME: MONGOLAB_DB
+  app.constant('DB_CONFIG', {
+    BASE_URL: '/api/db/'
   });
 
   app.run([
-    '$rootScope', '$location', 'Settings', function($rootScope, $location, Settings) {
+    '$rootScope', '$location', '$window', 'Settings', function($rootScope, $location, $window, Settings) {
       $rootScope.difficulties = ['Hexagon', 'Hexagoner', 'Hexagonest', 'Hyper Hexagon', 'Hyper Hexagoner', 'Hyper Hexagonest'];
       $rootScope.$on('$routeChangeStart', function() {
-        return $rootScope.isViewLoading = true;
+        $rootScope.isViewLoading = true;
+        return Settings.all(function(data) {
+          var setting, _i, _len, _results;
+          $rootScope.settings = {};
+          _results = [];
+          for (_i = 0, _len = data.length; _i < _len; _i++) {
+            setting = data[_i];
+            _results.push($rootScope.settings[setting.key] = setting.value);
+          }
+          return _results;
+        });
       });
       $rootScope.$on('$routeChangeSuccess', function() {
         $rootScope.isViewLoading = false;
-        return Settings.query({
-          key: 'maintenance',
-          value: true
-        }, function(data) {
-          if (data.length > 0) {
-            return $rootScope.maintenance = true;
-          } else {
-            return $rootScope.maintenance = false;
-          }
-        });
+        if ($window._gaq != null) {
+          return $window._gaq.push(['_trackPageview', $location.path()]);
+        }
       });
       $rootScope.getAvatar = function(url, size) {
         if (size == null) {
@@ -61,27 +63,28 @@
         }
         return 'http://media.steampowered.com/steamcommunity/public/images/avatars/' + url + size + '.jpg';
       };
-      return $rootScope.searchCustomUrl = function() {
+      $rootScope.searchCustomUrl = function() {
         return $location.path("/id/" + $rootScope.customUrlSearch);
       };
+      return $rootScope.parseTime = function(time) {};
     }
   ]);
 
   app.factory('Leaderboard', [
-    '$mongolabResourceHttp', function($mongolabResourceHttp) {
-      return $mongolabResourceHttp('leaderboard');
+    '$dbResourceHttp', function($dbResourceHttp) {
+      return $dbResourceHttp('leaderboard');
     }
   ]);
 
   app.factory('User', [
-    '$mongolabResourceHttp', function($mongolabResourceHttp) {
-      return $mongolabResourceHttp('users');
+    '$dbResourceHttp', function($dbResourceHttp) {
+      return $dbResourceHttp('users');
     }
   ]);
 
   app.factory('Settings', [
-    '$mongolabResourceHttp', function($mongolabResourceHttp) {
-      return $mongolabResourceHttp('settings');
+    '$dbResourceHttp', function($dbResourceHttp) {
+      return $dbResourceHttp('settings');
     }
   ]);
 
@@ -163,18 +166,22 @@
           user_ids = data.map(function(entry) {
             return entry.steamid;
           });
-          return User.query({
-            _id: {
-              $in: user_ids
-            }
-          }, function(data) {
-            var user, _i, _len;
-            for (_i = 0, _len = data.length; _i < _len; _i++) {
-              user = data[_i];
-              $scope.top10Users[user._id] = user;
-            }
+          if (user_ids.length > 0) {
+            return User.query({
+              _id: {
+                $in: user_ids
+              }
+            }, function(data) {
+              var user, _i, _len;
+              for (_i = 0, _len = data.length; _i < _len; _i++) {
+                user = data[_i];
+                $scope.top10Users[user._id] = user;
+              }
+              return $scope.top10Loading[difficulty] = false;
+            });
+          } else {
             return $scope.top10Loading[difficulty] = false;
-          });
+          }
         }, function(data, status) {
           return $scope.top10Loading[difficulty] = false;
         });

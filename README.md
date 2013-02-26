@@ -26,14 +26,9 @@ Oh, also buy our game [Faerie Solitaire](http://store.steampowered.com/app/38600
 
 This site was built with [AngularJS](http://angularjs.org/). It's my first project in it, so it may be ugly.
 I'm using [Ruby](http://www.ruby-lang.org/) for server stuff (specifically [Sinatra](http://www.sinatrarb.com/)),
+[MongoDB](http://www.mongodb.org/) ([MongoLab](https://mongolab.com/)) for the database,
 [CoffeeScript](http://coffeescript.org/) because pure Javascript sucks,
 and [Twitter Bootstrap](http://twitter.github.com/bootstrap/) because you wouldn't want to look at the website if it was designed by me.
-
-I'm using [MongoLab](https://mongolab.com/) for the database.
-**WARNING:** API keys aren't read only, so use throwaway accounts on MongoLab.
-I'll probably change it to server-side requests, because everyone can grab the API key and do whatever they want.
-[It will probably take a while until MongoLab implements read-only API keys](https://support.mongolab.com/entries/20269612-REST-api-permissions-and-security-best-practice)
-()
 
 ### I want to try it on my machine!
 
