@@ -36,8 +36,28 @@ app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $locatio
       size = '_' + size
     'http://media.steampowered.com/steamcommunity/public/images/avatars/' + url + size + '.jpg'
 
-  $rootScope.searchCustomUrl = ->
-    $location.path "/id/#{$rootScope.customUrlSearch}"
+  $rootScope.search =
+    options:
+      customUrl:
+        label: 'Custom URL'
+        placeholder: 'Custom profile URL'
+      steamid:
+        label: 'Steam ID'
+        placeholder: 'Profile number'
+#      nickname: # TODO
+#        label: 'Nickname search'
+#        placeholder: 'Search Steam nicknames'
+    type: 'customUrl'
+    text: ''
+    doSearch: ->
+      if !!this.text
+        switch this.type
+          when 'customUrl'
+            $location.path "/id/#{$rootScope.search.text}"
+          when 'steamid'
+            $location.path "/profiles/#{$rootScope.search.text}"
+#          when 'nickname'
+#            console.log 'nickname!' # TODO - redirect to a special page which will show a list of found results from the users collection
 ]
 
 # factories
@@ -289,6 +309,91 @@ app.controller 'CustomUrlCtrl', ['$scope', '$routeParams', '$http', '$location',
       $scope.error = true
 ]
 
-app.controller 'LeaderboardCtrl', ['$rootScope', ($rootScope) ->
+app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', '$filter', 'Leaderboard', 'User', ($scope, $rootScope, $routeParams, $filter, Leaderboard, User) ->
   $rootScope.title = 'Leaderboard'
+
+  $scope.leaderboardName = $routeParams.leaderboard.replace('_', ' ')
+
+  $scope.rankSort = 1
+
+  $scope.leaderboardLoading = true
+
+  $scope.pagination =
+    currentPage: 1
+    perPage: 20
+
+  Leaderboard.count(
+    { difficulty: $scope.leaderboardName },
+    (data) ->
+      $scope.leaderboardCount = parseInt(data)
+
+      $scope.pagination.numPages = ->
+        Math.ceil($scope.leaderboardCount / this.perPage)
+
+      $scope.changePage()
+    (data, status) ->
+      $scope.leaderboardLoading = false
+  )
+
+  $scope.$watch 'pagination.currentPage', ->
+    $scope.changePage()
+
+  $scope.changePage = ->
+    $scope.leaderboardLoading = true
+
+    Leaderboard.query(
+      { difficulty: $scope.leaderboardName },
+      {
+      sort: { rank: $scope.rankSort },
+      limit: $scope.pagination.perPage,
+      skip: ($scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage)
+      },
+      (data) ->
+        $scope.leaderboard = data
+
+        # get users
+
+        users = (entry.steamid for entry in data)
+        users = $filter('unique')(users)
+
+        $scope.uniqueUsersCount = users.length
+
+        User.query(
+          { _id: { $in: users } },
+        (data) ->
+          users = {}
+          for user in data
+            users[user._id] = user
+
+          # push user info to leaderboard so we can sort by friend name
+          for entry in $scope.leaderboard
+            angular.extend entry, users[entry.steamid]
+
+          $scope.leaderboardLoading = false
+        (data, status) ->
+          $scope.leaderboardLoading = false
+        )
+      (data, status) ->
+        $scope.leaderboardLoading = false
+    )
+
+  # we don't use TableSort here, we're getting data from DB
+  $scope.changeSorting = ->
+    if $scope.rankSort == 1
+      $scope.rankSort = -1
+    else
+      $scope.rankSort = 1
+    $scope.changePage()
+
+  $scope.sortClass = (reverse = false) ->
+    if $scope.rankSort == 1
+      if reverse
+        'icon-chevron-down'
+      else
+        'icon-chevron-up'
+    else
+      if reverse
+        'icon-chevron-up'
+      else
+        'icon-chevron-down'
 ]

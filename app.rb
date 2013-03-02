@@ -79,22 +79,25 @@ get '/api/profiles', provides: :json do
 
     steamids.uniq!
 
-    if steamids.count > 100
+    if steamids.count > 300 # Steam friends limit is 300 (250+50 for connecting FB), don't bother with more requests
       raise
     end
 
     if steamids.all? { |i| i.to_i.to_s == i }
       users = []
 
-      retriable tries: 3, interval: 2 do
-        api_users = WebApi.get(:json, 'ISteamUser', 'GetPlayerSummaries', '0002', steamids: steamids.join(','))
-        users << MultiJson.load(api_users)['response']['players'].map do |user|
-          {
-            _id: user['steamid'],
-            username: user['personaname'],
-            avatar: user['avatar'].split('.')[0..-2].join('.').split('/')[-2..-1].join('/'),
-            public: (user['communityvisibilitystate'] == 3 ? true : false)
-          }
+      # Steam has a limit of 100 IDs per request
+      steamids.each_slice(100) do |ids|
+        retriable tries: 3, interval: 2 do
+          api_users = WebApi.get(:json, 'ISteamUser', 'GetPlayerSummaries', '0002', steamids: ids.join(','))
+          users << MultiJson.load(api_users)['response']['players'].map do |user|
+            {
+              _id: user['steamid'],
+              username: user['personaname'],
+              avatar: user['avatar'].split('.')[0..-2].join('.').split('/')[-2..-1].join('/'),
+              public: (user['communityvisibilitystate'] == 3 ? true : false)
+            }
+          end
         end
       end
 
@@ -109,7 +112,7 @@ get '/api/profiles', provides: :json do
   rescue Exception => e
     raise e if settings.development?
     status 404
-    { error: true }.to_json
+    MultiJson.dump({ error: true })
   end
 end
 
@@ -119,7 +122,7 @@ get '/api/id/:customurl', provides: :json do
   rescue Exception => e
     raise e if settings.development?
     status 404
-     { error: true }.to_json
+    MultiJson.dump({ error: true })
   end
 end
 
@@ -134,9 +137,18 @@ get %r{/api/db/(?<collection>(leaderboard|users|settings))$}, provides: :json do
   if params[:l]
     find_options[:limit] = params[:l].to_i
   end
+  if params[:sk]
+    find_options[:skip] = params[:sk].to_i
+  end
   if params[:f]
     find_options[:fields] = MultiJson.load params[:f]
   end
 
-  db.collection(collection).find(MultiJson.load(params[:q]), find_options).to_a.to_json
+  query = db.collection(collection).find(MultiJson.load(params[:q]), find_options)
+
+  if params[:c] then
+    query.count(true).to_json
+  else
+    query.to_a.to_json
+  end
 end

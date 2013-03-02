@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html ng-app="hexagonStats">
   <head>
+    <meta charset="utf-8">
     <title ng-bind-template="{{$root.title}} | Super Hexagon stats">Super Hexagon stats</title>
+    <meta name="description" content="Leaderboard and other statistics for the Steam version of Terry Cavanagh's game Super Hexagon.">
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
     <link rel="stylesheet" href="css/style.css">
@@ -14,7 +16,9 @@
   <body>
     <div id="wrap">
       <noscript>
-        <h1>Sorry, you need to enable Javascript to use this site.</h1>
+        <h1>Super Hexagon stats</h1>
+        <h2>Sorry, you need to enable Javascript to use this site.</h2>
+        <hr>
       </noscript>
 
       <div ui-if="$root.isViewLoading">
@@ -40,10 +44,7 @@
                     <b class="caret"></b>
                   </a>
                   <ul class="dropdown-menu">
-                    <li activelink="#/leaderboard" noactivelinkindex><a href="#/leaderboard">All leaderboards</a></li>
-                    <li class="divider"></li>
-                    <li activelink="#/leaderboard/Hexagon" noactivelinkindex>
-                      <a href="#/leaderboard/Hexagon">Hexagon</a></li>
+                    <li activelink="#/leaderboard/Hexagon" noactivelinkindex><a href="#/leaderboard/Hexagon">Hexagon</a></li>
                     <li activelink="#/leaderboard/Hexagoner"><a href="#/leaderboard/Hexagoner">Hexagoner</a></li>
                     <li activelink="#/leaderboard/Hexagonest"><a href="#/leaderboard/Hexagonest">Hexagonest</a></li>
                     <li activelink="#/leaderboard/Hyper_Hexagon" noactivelinkindex>
@@ -55,12 +56,11 @@
                   </ul>
                 </li>
               </ul>
-              <div class="pull-right">
-                <form class="navbar-search">
-                  <input type="text" class="search-query" placeholder="Custom URL" ng-model="$root.customUrlSearch">
-                  <input type="submit" value="Go" class="btn" style="margin-top: -1px;" ng-click="$root.searchCustomUrl()">
-                </form>
-              </div>
+              <form class="navbar-form pull-right">
+                <select ng-model="$root.search.type" ng-options="type as val.label for (type, val) in $root.search.options"></select>
+                <input type="text" placeholder="{{ $root.search.options[$root.search.type].placeholder }}" ng-model="$root.search.text">
+                <input type="submit" value="Search" class="btn" ng-click="$root.search.doSearch()">
+              </form>
             </div>
           </div>
         </div>

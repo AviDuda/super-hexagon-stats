@@ -63,10 +63,30 @@
         }
         return 'http://media.steampowered.com/steamcommunity/public/images/avatars/' + url + size + '.jpg';
       };
-      $rootScope.searchCustomUrl = function() {
-        return $location.path("/id/" + $rootScope.customUrlSearch);
+      return $rootScope.search = {
+        options: {
+          customUrl: {
+            label: 'Custom URL',
+            placeholder: 'Custom profile URL'
+          },
+          steamid: {
+            label: 'Steam ID',
+            placeholder: 'Profile number'
+          }
+        },
+        type: 'customUrl',
+        text: '',
+        doSearch: function() {
+          if (!!this.text) {
+            switch (this.type) {
+              case 'customUrl':
+                return $location.path("/id/" + $rootScope.search.text);
+              case 'steamid':
+                return $location.path("/profiles/" + $rootScope.search.text);
+            }
+          }
+        }
       };
-      return $rootScope.parseTime = function(time) {};
     }
   ]);
 
@@ -376,8 +396,103 @@
   ]);
 
   app.controller('LeaderboardCtrl', [
-    '$rootScope', function($rootScope) {
-      return $rootScope.title = 'Leaderboard';
+    '$scope', '$rootScope', '$routeParams', '$filter', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, $filter, Leaderboard, User) {
+      $rootScope.title = 'Leaderboard';
+      $scope.leaderboardName = $routeParams.leaderboard.replace('_', ' ');
+      $scope.rankSort = 1;
+      $scope.leaderboardLoading = true;
+      $scope.pagination = {
+        currentPage: 1,
+        perPage: 20
+      };
+      Leaderboard.count({
+        difficulty: $scope.leaderboardName
+      }, function(data) {
+        $scope.leaderboardCount = parseInt(data);
+        $scope.pagination.numPages = function() {
+          return Math.ceil($scope.leaderboardCount / this.perPage);
+        };
+        return $scope.changePage();
+      }, function(data, status) {
+        return $scope.leaderboardLoading = false;
+      });
+      $scope.$watch('pagination.currentPage', function() {
+        return $scope.changePage();
+      });
+      $scope.changePage = function() {
+        $scope.leaderboardLoading = true;
+        return Leaderboard.query({
+          difficulty: $scope.leaderboardName
+        }, {
+          sort: {
+            rank: $scope.rankSort
+          },
+          limit: $scope.pagination.perPage,
+          skip: $scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage
+        }, function(data) {
+          var entry, users;
+          $scope.leaderboard = data;
+          users = (function() {
+            var _i, _len, _results;
+            _results = [];
+            for (_i = 0, _len = data.length; _i < _len; _i++) {
+              entry = data[_i];
+              _results.push(entry.steamid);
+            }
+            return _results;
+          })();
+          users = $filter('unique')(users);
+          $scope.uniqueUsersCount = users.length;
+          return User.query({
+            _id: {
+              $in: users
+            }
+          }, function(data) {
+            var user, _i, _j, _len, _len1, _ref;
+            users = {};
+            for (_i = 0, _len = data.length; _i < _len; _i++) {
+              user = data[_i];
+              users[user._id] = user;
+            }
+            _ref = $scope.leaderboard;
+            for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+              entry = _ref[_j];
+              angular.extend(entry, users[entry.steamid]);
+            }
+            return $scope.leaderboardLoading = false;
+          }, function(data, status) {
+            return $scope.leaderboardLoading = false;
+          });
+        }, function(data, status) {
+          return $scope.leaderboardLoading = false;
+        });
+      };
+      $scope.changeSorting = function() {
+        if ($scope.rankSort === 1) {
+          $scope.rankSort = -1;
+        } else {
+          $scope.rankSort = 1;
+        }
+        return $scope.changePage();
+      };
+      return $scope.sortClass = function(reverse) {
+        if (reverse == null) {
+          reverse = false;
+        }
+        if ($scope.rankSort === 1) {
+          if (reverse) {
+            return 'icon-chevron-down';
+          } else {
+            return 'icon-chevron-up';
+          }
+        } else {
+          if (reverse) {
+            return 'icon-chevron-up';
+          } else {
+            return 'icon-chevron-down';
+          }
+        }
+      };
     }
   ]);
 

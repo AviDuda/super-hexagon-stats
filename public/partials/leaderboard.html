@@ -1,10 +1,47 @@
 <div class="page-header">
-  <h1>Leaderboard - TODO</h1>
+  <h1>
+    <span ng-bind-template="Leaderboard - {{ leaderboardName }}">Leaderboard</span>
+    <small>{{ leaderboardCount || 'unknown' }} entries</small>
+  </h1>
 </div>
 
-<div class="row">
-  <!-- TODO -->
-  <div class="alert">
-    Sorry, this feature isn't implemented yet. Come back in a few days!
+<div class="row-fluid">
+  <ul class="nav nav-pills span10">
+    <li ng-repeat="difficulty in $root.difficulties" ng-class="{active: leaderboardName == difficulty}">
+      <a ng-href="#/leaderboard/{{ difficulty.replace(' ', '_') }}">{{ difficulty }}</a>
+    </li>
+  </ul>
+</div>
+
+<div class="row" ui-if="pagination.numPages()">
+  <div class="span8">
+    <pagination num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
+  </div>
+</div>
+
+<div ui-if="leaderboardLoading" class="alert alert-info">Loading...</div>
+
+<div ui-if="!leaderboardLoading && !leaderboard" class="alert">Error while loading leaderboard.</div>
+
+<div ui-if="!leaderboardLoading && leaderboard" class="row">
+  <div class="span8">
+    <table class="table table-condensed table-hover">
+      <thead>
+        <tr>
+          <th ng-click="changeSorting()" class="sortable"><i ng-class="sortClass()"></i>Rank</th>
+          <th></th>
+          <th>User</th>
+          <th ng-click="changeSorting()" class="sortable"><i ng-class="sortClass(true)"></i>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="entry in leaderboard">
+          <td>{{ entry.rank }}</td>
+          <td><img ng-src="{{ $root.getAvatar(entry.avatar) }}"></td>
+          <td><a ng-href="#/profiles/{{ entry.steamid }}">{{ entry.username }}</a></td>
+          <td>{{ entry.time.toFixed(2) }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
