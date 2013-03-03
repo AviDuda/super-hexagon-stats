@@ -8,6 +8,7 @@ app.config ['$routeProvider', ($routeProvider) ->
     .when('/leaderboard', {templateUrl: 'partials/leaderboard.html', controller: 'LeaderboardCtrl'})
     .when('/profiles/:steamid64', {templateUrl: 'partials/profile.html', controller: 'ProfileCtrl'})
     .when('/id/:customurl', {templateUrl: 'partials/custom_url.html', controller: 'CustomUrlCtrl'})
+    .when('/search/nickname/:nickname', {templateUrl: 'partials/search_nickname.html', controller: 'SearchNicknameCtrl'})
     .otherwise({ redirectTo: '/' })
 ]
 
@@ -44,10 +45,10 @@ app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $locatio
       steamid:
         label: 'Steam ID'
         placeholder: 'Profile number'
-#      nickname: # TODO
-#        label: 'Nickname search'
-#        placeholder: 'Search Steam nicknames'
-    type: 'customUrl'
+      nickname:
+        label: 'Nickname search'
+        placeholder: 'Search Steam nicknames'
+    type: 'nickname'
     text: ''
     doSearch: ->
       if !!this.text
@@ -56,8 +57,8 @@ app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $locatio
             $location.path "/id/#{$rootScope.search.text}"
           when 'steamid'
             $location.path "/profiles/#{$rootScope.search.text}"
-#          when 'nickname'
-#            console.log 'nickname!' # TODO - redirect to a special page which will show a list of found results from the users collection
+          when 'nickname'
+            $location.path("/search/nickname/#{$rootScope.search.text}")
 ]
 
 # factories
@@ -309,10 +310,10 @@ app.controller 'CustomUrlCtrl', ['$scope', '$routeParams', '$http', '$location',
       $scope.error = true
 ]
 
-app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', '$filter', 'Leaderboard', 'User', ($scope, $rootScope, $routeParams, $filter, Leaderboard, User) ->
-  $rootScope.title = 'Leaderboard'
-
+app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', 'Leaderboard', 'User', ($scope, $rootScope, $routeParams, Leaderboard, User) ->
   $scope.leaderboardName = $routeParams.leaderboard.replace('_', ' ')
+
+  $rootScope.title = "Leaderboard #{$scope.leaderboardName}"
 
   $scope.rankSort = 1
 
@@ -354,9 +355,6 @@ app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', '$fil
         # get users
 
         users = (entry.steamid for entry in data)
-        users = $filter('unique')(users)
-
-        $scope.uniqueUsersCount = users.length
 
         User.query(
           { _id: { $in: users } },
@@ -365,7 +363,7 @@ app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', '$fil
           for user in data
             users[user._id] = user
 
-          # push user info to leaderboard so we can sort by friend name
+          # push user info to leaderboard
           for entry in $scope.leaderboard
             angular.extend entry, users[entry.steamid]
 
@@ -396,4 +394,48 @@ app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', '$fil
         'icon-chevron-up'
       else
         'icon-chevron-down'
+]
+
+app.controller 'SearchNicknameCtrl', ['$scope', '$rootScope', '$routeParams', '$location', 'User', ($scope, $rootScope, $routeParams, $location, User) ->
+  $rootScope.title = 'Search Results'
+  $scope.nickname = $routeParams.nickname
+
+  $scope.pagination =
+    currentPage: 1
+    perPage: 20
+
+  User.count(
+    { username: { $regex: ".*#{$scope.nickname}.*", $options: 'i' } },
+    (data) ->
+      $scope.usersCount = parseInt(data)
+
+      $scope.pagination.numPages = ->
+        Math.ceil($scope.usersCount / this.perPage)
+
+      $scope.changePage()
+  )
+
+  $scope.$watch 'pagination.currentPage', ->
+    $scope.changePage()
+
+  $scope.changePage = ->
+    $scope.usersLoading = true
+
+    User.query(
+      { username: { $regex: ".*#{$scope.nickname}.*", $options: 'i' } },
+      {
+      sort: { username: 1 },
+      limit: $scope.pagination.perPage,
+      skip: ($scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage)
+      },
+      (data) ->
+        $scope.users = data
+        $scope.usersLoading = false
+
+        if data.length == 1
+          $scope.redirecting = true
+          $location.path "/profiles/#{data[0]._id}"
+      (data, status) ->
+        $scope.usersLoading = false
+    )
 ]

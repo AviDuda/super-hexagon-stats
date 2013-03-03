@@ -22,6 +22,9 @@
       }).when('/id/:customurl', {
         templateUrl: 'partials/custom_url.html',
         controller: 'CustomUrlCtrl'
+      }).when('/search/nickname/:nickname', {
+        templateUrl: 'partials/search_nickname.html',
+        controller: 'SearchNicknameCtrl'
       }).otherwise({
         redirectTo: '/'
       });
@@ -72,9 +75,13 @@
           steamid: {
             label: 'Steam ID',
             placeholder: 'Profile number'
+          },
+          nickname: {
+            label: 'Nickname search',
+            placeholder: 'Search Steam nicknames'
           }
         },
-        type: 'customUrl',
+        type: 'nickname',
         text: '',
         doSearch: function() {
           if (!!this.text) {
@@ -83,6 +90,8 @@
                 return $location.path("/id/" + $rootScope.search.text);
               case 'steamid':
                 return $location.path("/profiles/" + $rootScope.search.text);
+              case 'nickname':
+                return $location.path("/search/nickname/" + $rootScope.search.text);
             }
           }
         }
@@ -396,9 +405,9 @@
   ]);
 
   app.controller('LeaderboardCtrl', [
-    '$scope', '$rootScope', '$routeParams', '$filter', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, $filter, Leaderboard, User) {
-      $rootScope.title = 'Leaderboard';
+    '$scope', '$rootScope', '$routeParams', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, Leaderboard, User) {
       $scope.leaderboardName = $routeParams.leaderboard.replace('_', ' ');
+      $rootScope.title = "Leaderboard " + $scope.leaderboardName;
       $scope.rankSort = 1;
       $scope.leaderboardLoading = true;
       $scope.pagination = {
@@ -441,8 +450,6 @@
             }
             return _results;
           })();
-          users = $filter('unique')(users);
-          $scope.uniqueUsersCount = users.length;
           return User.query({
             _id: {
               $in: users
@@ -492,6 +499,56 @@
             return 'icon-chevron-down';
           }
         }
+      };
+    }
+  ]);
+
+  app.controller('SearchNicknameCtrl', [
+    '$scope', '$rootScope', '$routeParams', '$location', 'User', function($scope, $rootScope, $routeParams, $location, User) {
+      $rootScope.title = 'Search Results';
+      $scope.nickname = $routeParams.nickname;
+      $scope.pagination = {
+        currentPage: 1,
+        perPage: 20
+      };
+      User.count({
+        username: {
+          $regex: ".*" + $scope.nickname + ".*",
+          $options: 'i'
+        }
+      }, function(data) {
+        $scope.usersCount = parseInt(data);
+        $scope.pagination.numPages = function() {
+          return Math.ceil($scope.usersCount / this.perPage);
+        };
+        return $scope.changePage();
+      });
+      $scope.$watch('pagination.currentPage', function() {
+        return $scope.changePage();
+      });
+      return $scope.changePage = function() {
+        $scope.usersLoading = true;
+        return User.query({
+          username: {
+            $regex: ".*" + $scope.nickname + ".*",
+            $options: 'i'
+          }
+        }, {
+          sort: {
+            username: 1
+          },
+          limit: $scope.pagination.perPage,
+          skip: $scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage
+        }, function(data) {
+          $scope.users = data;
+          $scope.usersLoading = false;
+          if (data.length === 1) {
+            $scope.redirecting = true;
+            return $location.path("/profiles/" + data[0]._id);
+          }
+        }, function(data, status) {
+          return $scope.usersLoading = false;
+        });
       };
     }
   ]);

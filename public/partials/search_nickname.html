@@ -1,0 +1,37 @@
+<div class="page-header">
+  <h1>
+    Search Results
+    <small>Nickname &quot;{{ nickname }}&quot;</small>
+  </h1>
+</div>
+
+<div class="row" ui-if="pagination.numPages()">
+  <div class="span8">
+    <pagination num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
+  </div>
+</div>
+
+<div class="row">
+  <div ui-if="usersLoading" class="alert alert-info">Loading...</div>
+
+  <div ui-if="!usersLoading && !users" class="alert">Error while loading users.</div>
+
+  <div ui-if="!usersLoading && users.length == 0" class="alert alert-info">No user found.</div>
+
+  <div ui-if="!usersLoading && users.length > 0">
+    <div class="span4">
+      <table class="table table-condensed table-hover">
+        <thead>
+          <tr>
+            <th>User</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="user in users">
+            <td><a ng-href="#/profiles/{{ user._id }}"><img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

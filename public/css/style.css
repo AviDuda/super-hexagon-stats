@@ -46,3 +46,7 @@ html, body {
 #footer .container div {
   margin: 20px 0;
 }
+
+.avatar {
+  margin-right: 10px;
+}

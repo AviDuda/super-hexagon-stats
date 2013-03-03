@@ -37,7 +37,7 @@
       <tbody>
         <tr ng-repeat="entry in leaderboard">
           <td>{{ entry.rank }}</td>
-          <td><img ng-src="{{ $root.getAvatar(entry.avatar) }}"></td>
+          <td><a ng-href="#/profiles/{{ entry.steamid }}"><img ng-src="{{ $root.getAvatar(entry.avatar) }}"></a></td>
           <td><a ng-href="#/profiles/{{ entry.steamid }}">{{ entry.username }}</a></td>
           <td>{{ entry.time.toFixed(2) }}</td>
         </tr>
