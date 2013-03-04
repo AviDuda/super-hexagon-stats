@@ -25,6 +25,9 @@
       }).when('/search/nickname/:nickname', {
         templateUrl: 'partials/search_nickname.html',
         controller: 'SearchNicknameCtrl'
+      }).when('/compare', {
+        templateUrl: 'partials/compare.html',
+        controller: 'CompareCtrl'
       }).otherwise({
         redirectTo: '/'
       });
@@ -66,7 +69,7 @@
         }
         return 'http://media.steampowered.com/steamcommunity/public/images/avatars/' + url + size + '.jpg';
       };
-      return $rootScope.search = {
+      $rootScope.search = {
         options: {
           customUrl: {
             label: 'Custom URL',
@@ -95,6 +98,27 @@
             }
           }
         }
+      };
+      if (!localStorage.getItem('comparison')) {
+        localStorage.setItem('comparison', '[]');
+      }
+      $rootScope.comparison = JSON.parse(localStorage.getItem('comparison'));
+      $rootScope.comparisonRemove = function(steamid) {
+        var entry, new_comparison, _i, _len, _ref;
+        new_comparison = [];
+        _ref = $rootScope.comparison;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          entry = _ref[_i];
+          if (entry.steamid !== steamid) {
+            new_comparison.push(entry);
+          }
+        }
+        $rootScope.comparison = new_comparison;
+        return localStorage.setItem('comparison', angular.toJson($rootScope.comparison));
+      };
+      return $rootScope.comparisonRemoveAll = function() {
+        localStorage.setItem('comparison', '[]');
+        return $rootScope.comparison = [];
       };
     }
   ]);
@@ -136,6 +160,49 @@
               return element.removeClass('active');
             }
           });
+        }
+      };
+    }
+  ]);
+
+  app.directive('comparison', [
+    '$rootScope', '$compile', function($rootScope, $compile) {
+      return {
+        restrict: 'E',
+        replace: true,
+        link: function(scope, element, attrs) {
+          element.css('margin', '5px');
+          if (attrs.donthide == null) {
+            element.css('display', 'none');
+            element.parent().bind('mouseenter', function() {
+              return element.css('display', 'inline');
+            });
+            element.parent().bind('mouseleave', function() {
+              return element.css('display', 'none');
+            });
+          }
+          return scope.addToComparison = function() {
+            var comparison, entry, found, _i, _len;
+            if ((attrs.steamid != null) && (attrs.username != null) && (attrs.avatar != null)) {
+              comparison = JSON.parse(localStorage.getItem('comparison'));
+              found = false;
+              for (_i = 0, _len = comparison.length; _i < _len; _i++) {
+                entry = comparison[_i];
+                if (entry.steamid === attrs.steamid) {
+                  found = true;
+                }
+              }
+              if (!found) {
+                comparison.push({
+                  steamid: attrs.steamid,
+                  username: attrs.username,
+                  avatar: attrs.avatar
+                });
+                localStorage.setItem('comparison', angular.toJson(comparison));
+                return $rootScope.comparison = comparison;
+              }
+            }
+          };
         }
       };
     }
@@ -550,6 +617,57 @@
           return $scope.usersLoading = false;
         });
       };
+    }
+  ]);
+
+  app.controller('CompareCtrl', [
+    '$scope', '$rootScope', 'Leaderboard', function($scope, $rootScope, Leaderboard) {
+      $rootScope.title = 'Compare Users';
+      return $rootScope.$watch('comparison', function() {
+        var entry, users_array;
+        if ($rootScope.comparison.length > 0) {
+          users_array = (function() {
+            var _i, _len, _ref, _results;
+            _ref = $rootScope.comparison;
+            _results = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              entry = _ref[_i];
+              _results.push(entry.steamid);
+            }
+            return _results;
+          })();
+          $scope.leaderboardLoading = true;
+          return Leaderboard.query({
+            steamid: {
+              $in: users_array
+            }
+          }, {
+            sort: {
+              steamid: 1,
+              difficulty: 1
+            }
+          }, function(data) {
+            var _i, _j, _len, _len1, _ref;
+            $scope.users = {};
+            _ref = $rootScope.comparison;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              entry = _ref[_i];
+              $scope.users[entry.steamid] = {
+                username: entry.username,
+                avatar: entry.avatar,
+                leaderboard: {}
+              };
+            }
+            for (_j = 0, _len1 = data.length; _j < _len1; _j++) {
+              entry = data[_j];
+              $scope.users[entry.steamid].leaderboard[entry.difficulty] = entry;
+            }
+            return $scope.leaderboardLoading = false;
+          }, function(data, status) {
+            return $scope.leaderboardLoading = false;
+          });
+        }
+      });
     }
   ]);
 
