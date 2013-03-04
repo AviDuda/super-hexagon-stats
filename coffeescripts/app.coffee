@@ -9,6 +9,7 @@ app.config ['$routeProvider', ($routeProvider) ->
     .when('/profiles/:steamid64', {templateUrl: 'partials/profile.html', controller: 'ProfileCtrl'})
     .when('/id/:customurl', {templateUrl: 'partials/custom_url.html', controller: 'CustomUrlCtrl'})
     .when('/search/nickname/:nickname', {templateUrl: 'partials/search_nickname.html', controller: 'SearchNicknameCtrl'})
+    .when('/compare', {templateUrl: 'partials/compare.html', controller: 'CompareCtrl'})
     .otherwise({ redirectTo: '/' })
 ]
 
@@ -51,14 +52,32 @@ app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $locatio
     type: 'nickname'
     text: ''
     doSearch: ->
-      if !!this.text
-        switch this.type
+      if !!@text
+        switch @type
           when 'customUrl'
             $location.path "/id/#{$rootScope.search.text}"
           when 'steamid'
             $location.path "/profiles/#{$rootScope.search.text}"
           when 'nickname'
             $location.path("/search/nickname/#{$rootScope.search.text}")
+
+  # comparison
+
+  unless localStorage.getItem('comparison')
+    localStorage.setItem('comparison', '[]')
+
+  $rootScope.comparison = JSON.parse localStorage.getItem('comparison')
+
+  $rootScope.comparisonRemove = (steamid) ->
+    new_comparison = []
+    for entry in $rootScope.comparison
+      new_comparison.push entry unless entry.steamid == steamid
+    $rootScope.comparison = new_comparison
+    localStorage.setItem 'comparison', angular.toJson($rootScope.comparison)
+
+  $rootScope.comparisonRemoveAll = ->
+    localStorage.setItem 'comparison', '[]'
+    $rootScope.comparison = []
 ]
 
 # factories
@@ -78,7 +97,6 @@ app.factory 'Settings', ['$dbResourceHttp', ($dbResourceHttp) ->
 # directives
 
 app.directive 'activelink', ['$location', ($location) ->
-  {
   restrict: 'A',
   link: (scope, element, attrs) ->
     scope.$location = $location
@@ -93,7 +111,30 @@ app.directive 'activelink', ['$location', ($location) ->
         element.addClass('active')
       else
         element.removeClass('active')
-  }
+]
+
+app.directive 'comparison', ['$rootScope', '$compile', ($rootScope, $compile) ->
+  restrict: 'E',
+  replace: true,
+  link: (scope, element, attrs) ->
+    element.css('margin', '5px')
+
+    unless attrs.donthide?
+      element.css('display', 'none')
+      element.parent().bind 'mouseenter', ->
+        element.css('display', 'inline')
+      element.parent().bind 'mouseleave', ->
+        element.css('display', 'none')
+    scope.addToComparison = ->
+      if attrs.steamid? and attrs.username? and attrs.avatar?
+        comparison = JSON.parse(localStorage.getItem('comparison'))
+        found = false
+        for entry in comparison
+          found = true if entry.steamid == attrs.steamid
+        unless found
+          comparison.push { steamid: attrs.steamid, username: attrs.username, avatar: attrs.avatar }
+          localStorage.setItem('comparison', angular.toJson(comparison))
+          $rootScope.comparison = comparison
 ]
 
 # factories
@@ -106,17 +147,17 @@ app.factory 'TableSort', ->
       ascending: 'icon-chevron-up',
       descending: 'icon-chevron-down'
     sortClass: (column) ->
-      if column == this.column
-        if this.descending
-          this.icons.descending
+      if column == @column
+        if @descending
+          @icons.descending
         else
-          this.icons.ascending
+          @icons.ascending
     changeSorting: (column) ->
-      if column == this.column
-        this.descending = !this.descending
+      if column == @column
+        @descending = !@descending
       else
-        this.column = column
-        this.descending = false
+        @column = column
+        @descending = false
 
 # controllers
 
@@ -329,7 +370,7 @@ app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', 'Lead
       $scope.leaderboardCount = parseInt(data)
 
       $scope.pagination.numPages = ->
-        Math.ceil($scope.leaderboardCount / this.perPage)
+        Math.ceil($scope.leaderboardCount / @perPage)
 
       $scope.changePage()
     (data, status) ->
@@ -410,7 +451,7 @@ app.controller 'SearchNicknameCtrl', ['$scope', '$rootScope', '$routeParams', '$
       $scope.usersCount = parseInt(data)
 
       $scope.pagination.numPages = ->
-        Math.ceil($scope.usersCount / this.perPage)
+        Math.ceil($scope.usersCount / @perPage)
 
       $scope.changePage()
   )
@@ -438,4 +479,31 @@ app.controller 'SearchNicknameCtrl', ['$scope', '$rootScope', '$routeParams', '$
       (data, status) ->
         $scope.usersLoading = false
     )
+]
+
+app.controller 'CompareCtrl', ['$scope', '$rootScope', 'Leaderboard', ($scope, $rootScope, Leaderboard) ->
+  $rootScope.title = 'Compare Users'
+
+  $rootScope.$watch 'comparison', ->
+    if $rootScope.comparison.length > 0
+      users_array = (entry.steamid for entry in $rootScope.comparison)
+
+      $scope.leaderboardLoading = true
+
+      Leaderboard.query(
+        { steamid: { $in: users_array } },
+        { sort: { steamid: 1, difficulty: 1 } },
+        (data) ->
+          $scope.users = {}
+
+          for entry in $rootScope.comparison
+            $scope.users[entry.steamid] = { username: entry.username, avatar: entry.avatar, leaderboard: {} }
+
+          for entry in data
+            $scope.users[entry.steamid].leaderboard[entry.difficulty] = entry
+
+          $scope.leaderboardLoading = false
+        (data, status) ->
+          $scope.leaderboardLoading = false
+      )
 ]

@@ -29,7 +29,6 @@
       <thead>
         <tr>
           <th ng-click="changeSorting()" class="sortable"><i ng-class="sortClass()"></i>Rank</th>
-          <th></th>
           <th>User</th>
           <th ng-click="changeSorting()" class="sortable"><i ng-class="sortClass(true)"></i>Time</th>
         </tr>
@@ -37,8 +36,10 @@
       <tbody>
         <tr ng-repeat="entry in leaderboard">
           <td>{{ entry.rank }}</td>
-          <td><a ng-href="#/profiles/{{ entry.steamid }}"><img ng-src="{{ $root.getAvatar(entry.avatar) }}"></a></td>
-          <td><a ng-href="#/profiles/{{ entry.steamid }}">{{ entry.username }}</a></td>
+          <td>
+            <a ng-href="#/profiles/{{ entry.steamid }}"><img ng-src="{{ $root.getAvatar(entry.avatar) }}" class="avatar">{{ entry.username }}</a>
+            <comparison ng-include="'comparison/default'" steamid="{{ entry.steamid }}" username="{{ entry.username }}" avatar="{{ entry.avatar }}"></comparison>
+          </td>
           <td>{{ entry.time.toFixed(2) }}</td>
         </tr>
       </tbody>

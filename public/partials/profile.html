@@ -1,13 +1,19 @@
 <div ui-if="!userLoading && !user" class="alert alert-error">User not found.</div>
 <div ui-if="userLoading" class="alert alert-info">Loading user...</div>
 
+<script type="text/ng-template" id="comparison/profile">
+  <a class="btn btn-large" ng-click="addToComparison()"><i class="icon-plus"></i>Add to comparison</a>
+</script>
+
 <div ui-if="user">
   <div class="page-header">
     <div class="pull-right" style="padding-top: 5px;">
+      <comparison ng-include="'comparison/profile'" donthide steamid="{{ user._id }}" username="{{ user.username }}" avatar="{{ user.avatar }}"></comparison>
       <a class="btn btn-large" ng-href="http://steamcommunity.com/profiles/{{user._id}}/">View Steam profile</a>
     </div>
     <h1>
-      <img ng-src="{{$root.getAvatar(user.avatar, 'medium')}}" style="padding-right: 10px;">{{user.username}}
+      <img ng-src="{{$root.getAvatar(user.avatar, 'medium')}}" style="padding-right: 10px;">
+      {{user.username}}
       <small ui-if="!user.public">Private profile</small>
     </h1>
   </div>
@@ -69,7 +75,6 @@
             <table class="table table-hover" ui-if="!leaderboardLoading && leaderboard">
               <thead>
                 <tr>
-                  <th></th>
                   <th ng-click="sort.changeSorting('username')" class="sortable"><i ng-class="sort.sortClass('username')"></i>Friend</th>
                   <th ng-click="sort.changeSorting('difficulty')" class="sortable"><i ng-class="sort.sortClass('difficulty')"></i>Difficulty</th>
                   <th ng-click="sort.changeSorting('time')" class="sortable"><i ng-class="sort.sortClass('time')"></i>Time</th>
@@ -78,8 +83,10 @@
               </thead>
               <tbody>
                 <tr ng-repeat="entry in leaderboard">
-                  <td><img ng-src="{{ $root.getAvatar(entry.avatar) }}"></td>
-                  <td><a ng-href="#/profiles/{{ entry.steamid }}">{{ entry.username }}</a></td>
+                  <td>
+                    <a ng-href="#/profiles/{{ entry.steamid }}"><img ng-src="{{ $root.getAvatar(entry.avatar) }}" class="avatar">{{ entry.username }}</a>
+                    <comparison ng-include="'comparison/default'" steamid="{{ entry.steamid }}" username="{{ entry.username }}" avatar="{{ entry.avatar }}"></comparison>
+                  </td>
                   <td>{{ entry.difficulty }}</td>
                   <td>{{ entry.time.toFixed(2) }}</td>
                   <td>{{ entry.rank }}</td>
