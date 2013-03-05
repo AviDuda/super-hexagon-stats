@@ -64,7 +64,7 @@
     <tbody>
       <tr ng-repeat="commit in latestCommits">
         <td><a ng-href="{{ commit.author.html_url }}">{{ commit.author.login }}</a></td>
-        <td>{{ commit.commit.author.date }}</td>
+        <td>{{ commit.commit.author.date | date:'yyyy-MM-dd HH:mm:ss' }}</td>
         <td><a ng-href="https://github.com/TomasDuda/super-hexagon-stats/commit/{{ commit.sha }}">{{ commit.commit.message }}</a></td>
       </tr>
     </tbody>

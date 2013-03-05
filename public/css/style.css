@@ -50,3 +50,18 @@ html, body {
 .avatar {
   margin-right: 10px;
 }
+
+#githubribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: 0;
+}
+
+.js #githubribbon {
+  top: 40px;
+}
+
+.no-js #wrap, .no-js #footer {
+  display: none;
+}
