@@ -3,6 +3,7 @@ require 'sinatra/respond_with'
 require 'sinatra/flash'
 
 require 'net/http'
+require 'net/https'
 
 require 'mongo'
 
@@ -143,6 +144,19 @@ get %r{/api/(?<type>(gid|groups))/(?<groupid>.*)}, provides: :json do |type, gro
     }
 
     MultiJson.dump(output)
+  rescue Exception => e
+    raise e if settings.development?
+    status 404
+    MultiJson.dump({ error: true })
+  end
+end
+
+get '/api/latestcommits', provides: :json do
+  begin
+    http = Net::HTTP.new('api.github.com', 443)
+    http.use_ssl = true
+    response = http.get("/repos/TomasDuda/super-hexagon-stats/commits?per_page=5&client_id=#{ENV['GITHUB_OAUTH_CLIENT_ID']}&client_secret=#{ENV['GITHUB_OAUTH_CLIENT_SECRET']}")
+    response.body
   rescue Exception => e
     raise e if settings.development?
     status 404

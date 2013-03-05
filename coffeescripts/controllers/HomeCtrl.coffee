@@ -1,4 +1,4 @@
-app.controller 'HomeCtrl', [ '$scope', '$rootScope', 'Leaderboard', 'User', ($scope, $rootScope, Leaderboard, User) ->
+app.controller 'HomeCtrl', [ '$scope', '$rootScope', '$http', 'Leaderboard', 'User', ($scope, $rootScope, $http, Leaderboard, User) ->
   $rootScope.title = 'Home'
 
   $scope.difficultyRows = [['Hexagon', 'Hexagoner', 'Hexagonest'], ['Hyper Hexagon', 'Hyper Hexagoner', 'Hyper Hexagonest']]
@@ -36,4 +36,8 @@ app.controller 'HomeCtrl', [ '$scope', '$rootScope', 'Leaderboard', 'User', ($sc
   for difficulty in $rootScope.difficulties
     $scope.top10Loading[difficulty] = true
     getLeaderboard difficulty
+
+  $http.get('/api/latestcommits')
+    .success (data) ->
+      $scope.latestCommits = data
 ]

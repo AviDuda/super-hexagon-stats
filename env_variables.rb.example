@@ -7,4 +7,9 @@ ENV['STEAM_API_KEY'] = 'HALFLIFE3'
 ENV['DATABASE_NAME'] = '<dbname>'
 ENV['DATABASE_URL'] = "mongodb://<dbuser>:<dbpassword>>@<server>.mongolab.com:<port>/#{ENV['DATABASE_NAME']}"
 
+# GitHub OAuth client - used for getting a list of latest commits
+# create a new OAuth app on https://github.com/settings/applications/new
+ENV['GITHUB_OAUTH_CLIENT_ID'] = 'octodex'
+ENV['GITHUB_OAUTH_CLIENT_SECRET'] = 'octocat'
+
 ENV['GOOGLE_ANALYTICS_ACCOUNT'] = 'UA-123456789-0'

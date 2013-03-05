@@ -66,7 +66,9 @@
                     <li>
                       <a href="#/compare">
                         <span ui-if="$root.comparison.length > 0">Compare users</span>
-                        <span ui-if="!$root.comparison || $root.comparison.length == 0">No users to compare!</span>
+                        <span ui-if="!$root.comparison || $root.comparison.length == 0">
+                          No users to compare! Click on <i class="icon-plus"></i> next to the name to add it.
+                        </span>
                       </a>
                     </li>
                     <li ui-if="$root.comparison.length > 0"><a ng-click="$root.comparisonRemoveAll()">Remove all</a></li>

@@ -3,7 +3,8 @@
   <p>
     Hi! This is still a beta, so anything can change or break.
     <a href="https://github.com/TomasDuda/super-hexagon-stats">Contribute on GitHub</a> - help and ideas are welcome!
-    <br>Don't know what is Super Hexagon? <a href="http://store.steampowered.com/app/221640">Check it out on Steam.</a>
+    <br>Don't know what is Super Hexagon? <a href="http://store.steampowered.com/app/221640">Check it out on Steam</a> or
+    buy it in <a href="http://www.humblebundle.com/">Humble Bundle with Android 5</a> with 5 more amazing games (pay what you want).
   </p>
 </div>
 
@@ -45,4 +46,27 @@
       </table>
     </div>
   </div>
+</div>
+
+
+<div class="row" ui-if="latestCommits">
+  <div class="page-header">
+    <h1>Latest updates</h1>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Author</th>
+        <th>Date</th>
+        <th>Commit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="commit in latestCommits">
+        <td><a ng-href="{{ commit.author.html_url }}">{{ commit.author.login }}</a></td>
+        <td>{{ commit.commit.author.date }}</td>
+        <td><a ng-href="https://github.com/TomasDuda/super-hexagon-stats/commit/{{ commit.sha }}">{{ commit.commit.message }}</a></td>
+      </tr>
+    </tbody>
+  </table>
 </div>

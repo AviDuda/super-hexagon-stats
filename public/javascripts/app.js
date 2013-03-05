@@ -248,8 +248,8 @@
   ]);
 
   app.controller('HomeCtrl', [
-    '$scope', '$rootScope', 'Leaderboard', 'User', function($scope, $rootScope, Leaderboard, User) {
-      var difficulty, getLeaderboard, _i, _len, _ref, _results;
+    '$scope', '$rootScope', '$http', 'Leaderboard', 'User', function($scope, $rootScope, $http, Leaderboard, User) {
+      var difficulty, getLeaderboard, _i, _len, _ref;
       $rootScope.title = 'Home';
       $scope.difficultyRows = [['Hexagon', 'Hexagoner', 'Hexagonest'], ['Hyper Hexagon', 'Hyper Hexagoner', 'Hyper Hexagonest']];
       $scope.top10 = {};
@@ -294,13 +294,14 @@
         });
       };
       _ref = $rootScope.difficulties;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         difficulty = _ref[_i];
         $scope.top10Loading[difficulty] = true;
-        _results.push(getLeaderboard(difficulty));
+        getLeaderboard(difficulty);
       }
-      return _results;
+      return $http.get('/api/latestcommits').success(function(data) {
+        return $scope.latestCommits = data;
+      });
     }
   ]);
 
