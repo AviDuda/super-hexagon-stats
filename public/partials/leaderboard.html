@@ -1,7 +1,7 @@
 <div class="page-header">
   <h1>
     <span ng-bind-template="Leaderboard - {{ leaderboardName }}">Leaderboard</span>
-    <small>{{ leaderboardCount || 'unknown' }} entries</small>
+    <small ui-if="leaderboardCount">{{ leaderboardCount }} entries</small>
   </h1>
 </div>
 

@@ -82,8 +82,8 @@
                 </li>
                 <li class="divider-vertical"></li>
                 <form class="navbar-form pull-right">
-                  <select ng-model="$root.search.type" ng-options="type as val.label for (type, val) in $root.search.options"></select>
-                  <input type="text" placeholder="{{ $root.search.options[$root.search.type].placeholder }}" ng-model="$root.search.text">
+                  <select ng-model="$root.search.type" ng-options="type as val.label group by val.group for (type, val) in $root.search.options"></select>
+                  <input type="text" placeholder="{{ $root.search.options[$root.search.type].placeholder || $root.search.options[$root.search.type].label }}" ng-model="$root.search.text">
                   <input type="submit" value="Search" class="btn" ng-click="$root.search.doSearch()">
                 </form>
               </ul>

@@ -2,6 +2,8 @@ require 'sinatra'
 require 'sinatra/respond_with'
 require 'sinatra/flash'
 
+require 'net/http'
+
 require 'mongo'
 
 require 'multi_json'
@@ -119,6 +121,28 @@ end
 get '/api/id/:customurl', provides: :json do
   begin
     { steamid: SteamId.resolve_vanity_url(params[:customurl]).to_s }.to_json
+  rescue Exception => e
+    raise e if settings.development?
+    status 404
+    MultiJson.dump({ error: true })
+  end
+end
+
+get %r{/api/(?<type>(gid|groups))/(?<groupid>.*)}, provides: :json do |type, groupid|
+  begin
+    response = Net::HTTP.get_response(URI.parse("http://steamcommunity.com/#{type}/#{groupid}/memberslistxml/?xml=1"))
+
+    response = MultiXml.parse(response.body).to_hash
+
+    output = {
+      gid: response['memberList']['groupID64'],
+      name: response['memberList']['groupDetails']['groupName'],
+      avatar: response['memberList']['groupDetails']['avatarIcon'][67..-5],
+      memberCount: response['memberList']['memberCount'],
+      members: response['memberList']['members']['steamID64'].map { |member| member } # TODO get all members, not just the first page
+    }
+
+    MultiJson.dump(output)
   rescue Exception => e
     raise e if settings.development?
     status 404

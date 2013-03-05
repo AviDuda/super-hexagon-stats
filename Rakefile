@@ -167,17 +167,29 @@ task 'hex:update_data' do
 end
 
 namespace :js do
-  desc 'Compile CoffeeScript from ./coffeescripts to ./public/javascripts'
+  desc 'Compile CoffeeScript from ./coffeescripts to ./public/javascripts/app.js'
   task :compile do
-    source = "#{File.dirname(__FILE__)}/coffeescripts/"
-    javascripts = "#{File.dirname(__FILE__)}/public/javascripts/"
+    require 'find'
 
-    Dir.foreach(source) do |cf|
-      unless cf == '.' || cf == '..'
-        js = CoffeeScript.compile File.read("#{source}#{cf}")
-        open "#{javascripts}#{cf.gsub('.coffee', '.js')}", 'w' do |f|
-          f.puts js
+    files_to_compile = []
+
+    Dir.chdir File.join(settings.root, 'coffeescripts') do
+      Find.find(Dir.pwd) do |path|
+        if FileTest.directory? path
+          if File.basename(path)[0] == ?.
+            Find.prune
+          else
+            next
+          end
+        elsif path =~ /\.coffee$/
+          files_to_compile << path
         end
+      end
+
+      puts "coffee -pj #{files_to_compile.join(' ')}"
+
+      File.open File.join(settings.root, 'public', 'javascripts', 'app.js'), 'w' do |js|
+        js.write `coffee -pjl #{files_to_compile.join(' ')}`
       end
     end
   end

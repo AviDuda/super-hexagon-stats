@@ -7,7 +7,9 @@ app.config ['$routeProvider', ($routeProvider) ->
     .when('/leaderboard/:leaderboard', {templateUrl: 'partials/leaderboard.html', controller: 'LeaderboardCtrl'})
     .when('/leaderboard', {templateUrl: 'partials/leaderboard.html', controller: 'LeaderboardCtrl'})
     .when('/profiles/:steamid64', {templateUrl: 'partials/profile.html', controller: 'ProfileCtrl'})
-    .when('/id/:customurl', {templateUrl: 'partials/custom_url.html', controller: 'CustomUrlCtrl'})
+    .when('/id/:customurl', {templateUrl: 'partials/users_custom_url.html', controller: 'UsersCustomUrlCtrl'})
+    .when('/gid/:groupid', {templateUrl: 'partials/group.html', controller: 'GroupCtrl'})
+    .when('/groups/:groupid', {templateUrl: 'partials/group.html', controller: 'GroupCtrl'})
     .when('/search/nickname/:nickname', {templateUrl: 'partials/search_nickname.html', controller: 'SearchNicknameCtrl'})
     .when('/compare', {templateUrl: 'partials/compare.html', controller: 'CompareCtrl'})
     .otherwise({ redirectTo: '/' })
@@ -40,26 +42,39 @@ app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $locatio
 
   $rootScope.search =
     options:
-      customUrl:
-        label: 'Custom URL'
-        placeholder: 'Custom profile URL'
-      steamid:
+      usersCustomUrl:
+        group: 'Users'
+        label: 'Custom profile URL'
+      usersSteamId:
+        group: 'Users'
         label: 'Steam ID'
         placeholder: 'Profile number'
-      nickname:
+      usersNickname:
+        group: 'Users'
         label: 'Nickname search'
         placeholder: 'Search Steam nicknames'
-    type: 'nickname'
+      groupsId:
+        group: 'Groups'
+        label: 'Group ID'
+        placeholder: 'Group number'
+      groupsCustomUrl:
+        group: 'Groups'
+        label: 'Custom group URL'
+    type: 'usersNickname'
     text: ''
     doSearch: ->
       if !!@text
         switch @type
-          when 'customUrl'
+          when 'usersCustomUrl'
             $location.path "/id/#{$rootScope.search.text}"
-          when 'steamid'
+          when 'usersSteamId'
             $location.path "/profiles/#{$rootScope.search.text}"
-          when 'nickname'
+          when 'usersNickname'
             $location.path("/search/nickname/#{$rootScope.search.text}")
+          when 'groupsCustomUrl'
+            $location.path "/groups/#{$rootScope.search.text}"
+          when 'groupsId'
+            $location.path "/gid/#{$rootScope.search.text}"
 
   # comparison
 
@@ -78,432 +93,4 @@ app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $locatio
   $rootScope.comparisonRemoveAll = ->
     localStorage.setItem 'comparison', '[]'
     $rootScope.comparison = []
-]
-
-# factories
-
-app.factory 'Leaderboard', ['$dbResourceHttp', ($dbResourceHttp) ->
-  $dbResourceHttp 'leaderboard'
-]
-
-app.factory 'User', ['$dbResourceHttp', ($dbResourceHttp) ->
-  $dbResourceHttp 'users'
-]
-
-app.factory 'Settings', ['$dbResourceHttp', ($dbResourceHttp) ->
-  $dbResourceHttp 'settings'
-]
-
-# directives
-
-app.directive 'activelink', ['$location', ($location) ->
-  restrict: 'A',
-  link: (scope, element, attrs) ->
-    scope.$location = $location
-    scope.$watch '$location.path()', (locationPath) ->
-      # if the tag has an attribute noactivelinkindex, don't search just for indexOf, locations must be the same (useful for dropdowns in menu etc.)
-      if attrs.noactivelinkindex?
-        isCorrectLocation = attrs.activelink.substring(1) == locationPath
-      else
-        isCorrectLocation = locationPath.indexOf(attrs.activelink.substring(1)) > -1
-
-      if attrs.activelink.length > 0 and isCorrectLocation
-        element.addClass('active')
-      else
-        element.removeClass('active')
-]
-
-app.directive 'comparison', ['$rootScope', '$compile', ($rootScope, $compile) ->
-  restrict: 'E',
-  replace: true,
-  link: (scope, element, attrs) ->
-    element.css('margin', '5px')
-
-    unless attrs.donthide?
-      element.css('display', 'none')
-      element.parent().bind 'mouseenter', ->
-        element.css('display', 'inline')
-      element.parent().bind 'mouseleave', ->
-        element.css('display', 'none')
-    scope.addToComparison = ->
-      if attrs.steamid? and attrs.username? and attrs.avatar?
-        comparison = JSON.parse(localStorage.getItem('comparison'))
-        found = false
-        for entry in comparison
-          found = true if entry.steamid == attrs.steamid
-        unless found
-          comparison.push { steamid: attrs.steamid, username: attrs.username, avatar: attrs.avatar }
-          localStorage.setItem('comparison', angular.toJson(comparison))
-          $rootScope.comparison = comparison
-]
-
-# factories
-
-app.factory 'TableSort', ->
-  TableSort =
-    column: ''
-    descending: false
-    icons:
-      ascending: 'icon-chevron-up',
-      descending: 'icon-chevron-down'
-    sortClass: (column) ->
-      if column == @column
-        if @descending
-          @icons.descending
-        else
-          @icons.ascending
-    changeSorting: (column) ->
-      if column == @column
-        @descending = !@descending
-      else
-        @column = column
-        @descending = false
-
-# controllers
-
-app.controller 'HomeCtrl', [ '$scope', '$rootScope', 'Leaderboard', 'User', ($scope, $rootScope, Leaderboard, User) ->
-  $rootScope.title = 'Home'
-
-  $scope.difficultyRows = [['Hexagon', 'Hexagoner', 'Hexagonest'], ['Hyper Hexagon', 'Hyper Hexagoner', 'Hyper Hexagonest']]
-
-  $scope.top10 = {}
-  $scope.top10Loading = {}
-  $scope.top10Users = {}
-
-  getLeaderboard = (difficulty) ->
-    Leaderboard.query(
-      { difficulty: difficulty },
-      { sort: { time: -1 }, limit: 10, fields: { _id: 0 } },
-      (data) ->
-        $scope.top10[difficulty] = data
-
-        user_ids = data.map (entry) -> entry.steamid
-
-        if user_ids.length > 0
-          User.query(
-            { _id: { $in: user_ids } },
-            (data) ->
-              for user in data
-                $scope.top10Users[user._id] = user
-
-              $scope.top10Loading[difficulty] = false
-          )
-        else
-          $scope.top10Loading[difficulty] = false
-
-      (data, status) ->
-        $scope.top10Loading[difficulty] = false
-    )
-
-
-  for difficulty in $rootScope.difficulties
-    $scope.top10Loading[difficulty] = true
-    getLeaderboard difficulty
-]
-
-
-app.controller 'ProfileCtrl', ['$scope', '$rootScope', '$routeParams', '$http', 'User', ($scope, $rootScope, $routeParams, $http, User) ->
-  $rootScope.title = 'Profile'
-
-  $scope.userLoading = true
-
-  User.query(
-    { _id: $routeParams.steamid64 },
-    (data) ->
-      if data[0]?
-        # user has some etries in the leaderboard, we have all required info
-        $scope.user = data[0]
-        $rootScope.title = "#{$scope.user.username}'s profile"
-        $scope.userLoading = false
-      else
-        # fetch user data from Steam API
-        $http.get('/api/profiles?steamids=' + $routeParams.steamid64)
-          .success (data) ->
-            $scope.user = data[0]
-            $scope.userLoading = false
-          .error (data, status) ->
-            $scope.userLoading = false
-  )
-]
-
-app.controller 'ProfileLeaderboardCtrl', ['$scope', '$rootScope', '$filter', 'Leaderboard', 'TableSort', ($scope, $rootScope, $filter, Leaderboard, TableSort) ->
-  $scope.leaderboardLoading = true
-
-  Leaderboard.query(
-    { steamid: $scope.user._id },
-    { sort: { difficulty: 1 }, fields: { _id: 0 } }
-    (data) ->
-      $scope.leaderboard = data
-      $scope.leaderboardLoading = false
-    (data, status) ->
-      $scope.leaderboardLoading = false
-  )
-
-  $scope.sort = {}
-  angular.extend $scope.sort, TableSort
-  $scope.sort.column = 'difficulty'
-
-  $scope.setFilters = () ->
-    $scope.leaderboard = $filter('orderBy')($scope.leaderboard, $scope.sort.column, $scope.sort.descending)
-
-  $scope.setFilters()
-
-  # change filters after sorting
-  $scope.oldChangeSorting = $scope.sort.changeSorting
-  $scope.sort.changeSorting = () ->
-    $scope.oldChangeSorting.apply this, arguments
-    $scope.setFilters()
-]
-
-app.controller 'ProfileFriendsCtrl', ['$scope', '$rootScope', '$http', '$filter', 'Leaderboard', 'User', 'TableSort', ($scope, $rootScope, $http, $filter, Leaderboard, User, TableSort) ->
-  $scope.loadingAllFriends = true
-
-  $http.get("/api/friends/#{$scope.user._id}")
-    .success (data) ->
-      $scope.allFriends = data
-      $scope.loadingAllFriends = false
-      $scope.switchDifficultyView('all') # view all difficulties
-    .error (data, status) ->
-      $scope.loadingAllFriends = false
-
-  $scope.viewDifficulties = {}
-
-  $scope.switchDifficultyView = (difficulty) ->
-    $scope.viewDifficulties[difficulty] = !$scope.viewDifficulties[difficulty]
-    if difficulty == 'all'
-      for diff in $rootScope.difficulties
-        $scope.viewDifficulties[diff] = $scope.viewDifficulties[difficulty]
-    $scope.getLeaderboard()
-
-  $scope.getLeaderboard = ->
-    if $scope.viewDifficulties['all']
-      query_difficulties = $rootScope.difficulties
-    else
-      query_difficulties = []
-      for difficulty in $rootScope.difficulties
-        if $scope.viewDifficulties[difficulty]
-          query_difficulties.push difficulty
-
-    $scope.leaderboardLoading = true
-
-    Leaderboard.query(
-      { difficulty: { $in: query_difficulties }, steamid: { $in: $scope.allFriends } },
-      { fields: { _id: 0 } },
-      (data) ->
-        $scope.leaderboard = data
-
-        users = (entry.steamid for entry in data)
-        users = $filter('unique')(users)
-
-        $scope.uniqueUsersCount = users.length
-
-        User.query(
-          { _id: { $in: users } },
-          (data) ->
-            users = {}
-            for user in data
-              users[user._id] = user
-
-            # push user info to leaderboard so we can sort by friend name
-            for entry in $scope.leaderboard
-              angular.extend entry, users[entry.steamid]
-
-            $scope.setFilters()
-
-            $scope.leaderboardLoading = false
-          (data, status) ->
-            $scope.leaderboardLoading = false
-        )
-
-      (data) ->
-        $scope.leaderboardLoading = false
-    )
-
-  $scope.sort = {}
-  angular.extend $scope.sort, TableSort
-  $scope.sort.column = 'username'
-
-  $scope.setFilters = () ->
-    $scope.leaderboard = $filter('orderBy')($scope.leaderboard, $scope.sort.column, $scope.sort.descending)
-
-  # change filters after sorting
-  $scope.oldChangeSorting = $scope.sort.changeSorting
-  $scope.sort.changeSorting = () ->
-    $scope.oldChangeSorting.apply this, arguments
-    $scope.setFilters()
-]
-
-app.controller 'CustomUrlCtrl', ['$scope', '$routeParams', '$http', '$location', ($scope, $routeParams, $http, $location) ->
-  $scope.loading = true
-  $scope.customUrl = $routeParams.customurl
-
-  $http.get('/api/id/' + $routeParams.customurl)
-    .success (data) ->
-      $scope.loading = false
-      if data.steamid? and data.steamid != ''
-        $scope.steamid = data.steamid
-        $scope.redirecting = true
-        $location.path('/profiles/' + $scope.steamid)
-      else
-        $scope.error = true
-    .error (data, status) ->
-      $scope.loading = false
-      $scope.error = true
-]
-
-app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', 'Leaderboard', 'User', ($scope, $rootScope, $routeParams, Leaderboard, User) ->
-  $scope.leaderboardName = $routeParams.leaderboard.replace('_', ' ')
-
-  $rootScope.title = "Leaderboard #{$scope.leaderboardName}"
-
-  $scope.rankSort = 1
-
-  $scope.leaderboardLoading = true
-
-  $scope.pagination =
-    currentPage: 1
-    perPage: 20
-
-  Leaderboard.count(
-    { difficulty: $scope.leaderboardName },
-    (data) ->
-      $scope.leaderboardCount = parseInt(data)
-
-      $scope.pagination.numPages = ->
-        Math.ceil($scope.leaderboardCount / @perPage)
-
-      $scope.changePage()
-    (data, status) ->
-      $scope.leaderboardLoading = false
-  )
-
-  $scope.$watch 'pagination.currentPage', ->
-    $scope.changePage()
-
-  $scope.changePage = ->
-    $scope.leaderboardLoading = true
-
-    Leaderboard.query(
-      { difficulty: $scope.leaderboardName },
-      {
-      sort: { rank: $scope.rankSort },
-      limit: $scope.pagination.perPage,
-      skip: ($scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage)
-      },
-      (data) ->
-        $scope.leaderboard = data
-
-        # get users
-
-        users = (entry.steamid for entry in data)
-
-        User.query(
-          { _id: { $in: users } },
-        (data) ->
-          users = {}
-          for user in data
-            users[user._id] = user
-
-          # push user info to leaderboard
-          for entry in $scope.leaderboard
-            angular.extend entry, users[entry.steamid]
-
-          $scope.leaderboardLoading = false
-        (data, status) ->
-          $scope.leaderboardLoading = false
-        )
-      (data, status) ->
-        $scope.leaderboardLoading = false
-    )
-
-  # we don't use TableSort here, we're getting data from DB
-  $scope.changeSorting = ->
-    if $scope.rankSort == 1
-      $scope.rankSort = -1
-    else
-      $scope.rankSort = 1
-    $scope.changePage()
-
-  $scope.sortClass = (reverse = false) ->
-    if $scope.rankSort == 1
-      if reverse
-        'icon-chevron-down'
-      else
-        'icon-chevron-up'
-    else
-      if reverse
-        'icon-chevron-up'
-      else
-        'icon-chevron-down'
-]
-
-app.controller 'SearchNicknameCtrl', ['$scope', '$rootScope', '$routeParams', '$location', 'User', ($scope, $rootScope, $routeParams, $location, User) ->
-  $rootScope.title = 'Search Results'
-  $scope.nickname = $routeParams.nickname
-
-  $scope.pagination =
-    currentPage: 1
-    perPage: 20
-
-  User.count(
-    { username: { $regex: ".*#{$scope.nickname}.*", $options: 'i' } },
-    (data) ->
-      $scope.usersCount = parseInt(data)
-
-      $scope.pagination.numPages = ->
-        Math.ceil($scope.usersCount / @perPage)
-
-      $scope.changePage()
-  )
-
-  $scope.$watch 'pagination.currentPage', ->
-    $scope.changePage()
-
-  $scope.changePage = ->
-    $scope.usersLoading = true
-
-    User.query(
-      { username: { $regex: ".*#{$scope.nickname}.*", $options: 'i' } },
-      {
-      sort: { username: 1 },
-      limit: $scope.pagination.perPage,
-      skip: ($scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage)
-      },
-      (data) ->
-        $scope.users = data
-        $scope.usersLoading = false
-
-        if data.length == 1
-          $scope.redirecting = true
-          $location.path "/profiles/#{data[0]._id}"
-      (data, status) ->
-        $scope.usersLoading = false
-    )
-]
-
-app.controller 'CompareCtrl', ['$scope', '$rootScope', 'Leaderboard', ($scope, $rootScope, Leaderboard) ->
-  $rootScope.title = 'Compare Users'
-
-  $rootScope.$watch 'comparison', ->
-    if $rootScope.comparison.length > 0
-      users_array = (entry.steamid for entry in $rootScope.comparison)
-
-      $scope.leaderboardLoading = true
-
-      Leaderboard.query(
-        { steamid: { $in: users_array } },
-        { sort: { steamid: 1, difficulty: 1 } },
-        (data) ->
-          $scope.users = {}
-
-          for entry in $rootScope.comparison
-            $scope.users[entry.steamid] = { username: entry.username, avatar: entry.avatar, leaderboard: {} }
-
-          for entry in data
-            $scope.users[entry.steamid].leaderboard[entry.difficulty] = entry
-
-          $scope.leaderboardLoading = false
-        (data, status) ->
-          $scope.leaderboardLoading = false
-      )
 ]

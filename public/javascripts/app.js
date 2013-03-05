@@ -1,6 +1,5 @@
 (function() {
   "use strict";
-
   var app;
 
   app = angular.module('hexagonStats', ['ui', 'ui.bootstrap', 'dbResourceHttp']);
@@ -20,8 +19,14 @@
         templateUrl: 'partials/profile.html',
         controller: 'ProfileCtrl'
       }).when('/id/:customurl', {
-        templateUrl: 'partials/custom_url.html',
-        controller: 'CustomUrlCtrl'
+        templateUrl: 'partials/users_custom_url.html',
+        controller: 'UsersCustomUrlCtrl'
+      }).when('/gid/:groupid', {
+        templateUrl: 'partials/group.html',
+        controller: 'GroupCtrl'
+      }).when('/groups/:groupid', {
+        templateUrl: 'partials/group.html',
+        controller: 'GroupCtrl'
       }).when('/search/nickname/:nickname', {
         templateUrl: 'partials/search_nickname.html',
         controller: 'SearchNicknameCtrl'
@@ -71,30 +76,45 @@
       };
       $rootScope.search = {
         options: {
-          customUrl: {
-            label: 'Custom URL',
-            placeholder: 'Custom profile URL'
+          usersCustomUrl: {
+            group: 'Users',
+            label: 'Custom profile URL'
           },
-          steamid: {
+          usersSteamId: {
+            group: 'Users',
             label: 'Steam ID',
             placeholder: 'Profile number'
           },
-          nickname: {
+          usersNickname: {
+            group: 'Users',
             label: 'Nickname search',
             placeholder: 'Search Steam nicknames'
+          },
+          groupsId: {
+            group: 'Groups',
+            label: 'Group ID',
+            placeholder: 'Group number'
+          },
+          groupsCustomUrl: {
+            group: 'Groups',
+            label: 'Custom group URL'
           }
         },
-        type: 'nickname',
+        type: 'usersNickname',
         text: '',
         doSearch: function() {
           if (!!this.text) {
             switch (this.type) {
-              case 'customUrl':
+              case 'usersCustomUrl':
                 return $location.path("/id/" + $rootScope.search.text);
-              case 'steamid':
+              case 'usersSteamId':
                 return $location.path("/profiles/" + $rootScope.search.text);
-              case 'nickname':
+              case 'usersNickname':
                 return $location.path("/search/nickname/" + $rootScope.search.text);
+              case 'groupsCustomUrl':
+                return $location.path("/groups/" + $rootScope.search.text);
+              case 'groupsId':
+                return $location.path("/gid/" + $rootScope.search.text);
             }
           }
         }
@@ -123,119 +143,108 @@
     }
   ]);
 
-  app.factory('Leaderboard', [
-    '$dbResourceHttp', function($dbResourceHttp) {
-      return $dbResourceHttp('leaderboard');
-    }
-  ]);
-
-  app.factory('User', [
-    '$dbResourceHttp', function($dbResourceHttp) {
-      return $dbResourceHttp('users');
-    }
-  ]);
-
-  app.factory('Settings', [
-    '$dbResourceHttp', function($dbResourceHttp) {
-      return $dbResourceHttp('settings');
-    }
-  ]);
-
-  app.directive('activelink', [
-    '$location', function($location) {
-      return {
-        restrict: 'A',
-        link: function(scope, element, attrs) {
-          scope.$location = $location;
-          return scope.$watch('$location.path()', function(locationPath) {
-            var isCorrectLocation;
-            if (attrs.noactivelinkindex != null) {
-              isCorrectLocation = attrs.activelink.substring(1) === locationPath;
-            } else {
-              isCorrectLocation = locationPath.indexOf(attrs.activelink.substring(1)) > -1;
+  app.controller('CompareCtrl', [
+    '$scope', '$rootScope', 'Leaderboard', function($scope, $rootScope, Leaderboard) {
+      $rootScope.title = 'Compare Users';
+      return $rootScope.$watch('comparison', function() {
+        var entry, users_array;
+        if ($rootScope.comparison.length > 0) {
+          users_array = (function() {
+            var _i, _len, _ref, _results;
+            _ref = $rootScope.comparison;
+            _results = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              entry = _ref[_i];
+              _results.push(entry.steamid);
             }
-            if (attrs.activelink.length > 0 && isCorrectLocation) {
-              return element.addClass('active');
-            } else {
-              return element.removeClass('active');
+            return _results;
+          })();
+          $scope.leaderboardLoading = true;
+          return Leaderboard.query({
+            steamid: {
+              $in: users_array
             }
+          }, {
+            sort: {
+              steamid: 1,
+              difficulty: 1
+            }
+          }, function(data) {
+            var _i, _j, _len, _len1, _ref;
+            $scope.users = {};
+            _ref = $rootScope.comparison;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              entry = _ref[_i];
+              $scope.users[entry.steamid] = {
+                username: entry.username,
+                avatar: entry.avatar,
+                leaderboard: {}
+              };
+            }
+            for (_j = 0, _len1 = data.length; _j < _len1; _j++) {
+              entry = data[_j];
+              $scope.users[entry.steamid].leaderboard[entry.difficulty] = entry;
+            }
+            $scope.leaderboardLoading = false;
+            return function(data, status) {
+              return $scope.leaderboardLoading = false;
+            };
           });
         }
-      };
+      });
     }
   ]);
 
-  app.directive('comparison', [
-    '$rootScope', '$compile', function($rootScope, $compile) {
-      return {
-        restrict: 'E',
-        replace: true,
-        link: function(scope, element, attrs) {
-          element.css('margin', '5px');
-          if (attrs.donthide == null) {
-            element.css('display', 'none');
-            element.parent().bind('mouseenter', function() {
-              return element.css('display', 'inline');
-            });
-            element.parent().bind('mouseleave', function() {
-              return element.css('display', 'none');
-            });
-          }
-          return scope.addToComparison = function() {
-            var comparison, entry, found, _i, _len;
-            if ((attrs.steamid != null) && (attrs.username != null) && (attrs.avatar != null)) {
-              comparison = JSON.parse(localStorage.getItem('comparison'));
-              found = false;
-              for (_i = 0, _len = comparison.length; _i < _len; _i++) {
-                entry = comparison[_i];
-                if (entry.steamid === attrs.steamid) {
-                  found = true;
-                }
-              }
-              if (!found) {
-                comparison.push({
-                  steamid: attrs.steamid,
-                  username: attrs.username,
-                  avatar: attrs.avatar
-                });
-                localStorage.setItem('comparison', angular.toJson(comparison));
-                return $rootScope.comparison = comparison;
-              }
-            }
-          };
-        }
-      };
-    }
-  ]);
-
-  app.factory('TableSort', function() {
-    var TableSort;
-    return TableSort = {
-      column: '',
-      descending: false,
-      icons: {
-        ascending: 'icon-chevron-up',
-        descending: 'icon-chevron-down'
-      },
-      sortClass: function(column) {
-        if (column === this.column) {
-          if (this.descending) {
-            return this.icons.descending;
-          } else {
-            return this.icons.ascending;
-          }
-        }
-      },
-      changeSorting: function(column) {
-        if (column === this.column) {
-          return this.descending = !this.descending;
-        } else {
-          this.column = column;
-          return this.descending = false;
-        }
+  app.controller('GroupCtrl', [
+    '$scope', '$rootScope', '$routeParams', '$location', '$http', '$filter', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, $location, $http, $filter, Leaderboard, User) {
+      var url_type;
+      $rootScope.title = 'Group';
+      url_type = 'gid';
+      if ($location.$$path.slice(0, 4) !== '/gid') {
+        url_type = 'groups';
       }
-    };
-  });
+      $scope.groupLoading = true;
+      return $http.get("/api/" + url_type + "/" + $routeParams.groupid).success(function(data) {
+        $scope.group = data;
+        return User.query({
+          _id: {
+            $in: data.members
+          }
+        }, function(data) {
+          var entry, _i, _len;
+          $scope.users = {};
+          $scope.unique_users = [];
+          for (_i = 0, _len = data.length; _i < _len; _i++) {
+            entry = data[_i];
+            $scope.users[entry._id] = {
+              username: entry.username,
+              avatar: entry.avatar,
+              leaderboard: {}
+            };
+            $scope.unique_users.push(entry._id);
+          }
+          return Leaderboard.query({
+            steamid: {
+              $in: $scope.unique_users
+            }
+          }, function(data) {
+            var _j, _len1;
+            for (_j = 0, _len1 = data.length; _j < _len1; _j++) {
+              entry = data[_j];
+              $scope.users[entry.steamid].leaderboard[entry.difficulty] = entry;
+            }
+            return $scope.groupLoading = false;
+          }, function(data, status) {
+            return $scope.groupLoading = false;
+          });
+        }, function(data, status) {
+          return $scope.groupLoading = false;
+        });
+      }).error(function(data, status) {
+        return $scope.groupLoading = false;
+      });
+    }
+  ]);
 
   app.controller('HomeCtrl', [
     '$scope', '$rootScope', 'Leaderboard', 'User', function($scope, $rootScope, Leaderboard, User) {
@@ -263,7 +272,7 @@
             return entry.steamid;
           });
           if (user_ids.length > 0) {
-            return User.query({
+            User.query({
               _id: {
                 $in: user_ids
               }
@@ -276,10 +285,11 @@
               return $scope.top10Loading[difficulty] = false;
             });
           } else {
-            return $scope.top10Loading[difficulty] = false;
+            $scope.top10Loading[difficulty] = false;
           }
-        }, function(data, status) {
-          return $scope.top10Loading[difficulty] = false;
+          return function(data, status) {
+            return $scope.top10Loading[difficulty] = false;
+          };
         });
       };
       _ref = $rootScope.difficulties;
@@ -290,6 +300,108 @@
         _results.push(getLeaderboard(difficulty));
       }
       return _results;
+    }
+  ]);
+
+  app.controller('LeaderboardCtrl', [
+    '$scope', '$rootScope', '$routeParams', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, Leaderboard, User) {
+      $scope.leaderboardName = $routeParams.leaderboard.replace('_', ' ');
+      $rootScope.title = "Leaderboard " + $scope.leaderboardName;
+      $scope.rankSort = 1;
+      $scope.leaderboardLoading = true;
+      $scope.pagination = {
+        currentPage: 1,
+        perPage: 20
+      };
+      Leaderboard.count({
+        difficulty: $scope.leaderboardName
+      }, function(data) {
+        $scope.leaderboardCount = parseInt(data);
+        $scope.pagination.numPages = function() {
+          return Math.ceil($scope.leaderboardCount / this.perPage);
+        };
+        $scope.changePage();
+        return function(data, status) {
+          return $scope.leaderboardLoading = false;
+        };
+      });
+      $scope.$watch('pagination.currentPage', function() {
+        return $scope.changePage();
+      });
+      $scope.changePage = function() {
+        $scope.leaderboardLoading = true;
+        return Leaderboard.query({
+          difficulty: $scope.leaderboardName
+        }, {
+          sort: {
+            rank: $scope.rankSort
+          },
+          limit: $scope.pagination.perPage,
+          skip: $scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage
+        }, function(data) {
+          var entry, users;
+          $scope.leaderboard = data;
+          users = (function() {
+            var _i, _len, _results;
+            _results = [];
+            for (_i = 0, _len = data.length; _i < _len; _i++) {
+              entry = data[_i];
+              _results.push(entry.steamid);
+            }
+            return _results;
+          })();
+          User.query({
+            _id: {
+              $in: users
+            }
+          }, function(data) {
+            var user, _i, _j, _len, _len1, _ref;
+            users = {};
+            for (_i = 0, _len = data.length; _i < _len; _i++) {
+              user = data[_i];
+              users[user._id] = user;
+            }
+            _ref = $scope.leaderboard;
+            for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+              entry = _ref[_j];
+              angular.extend(entry, users[entry.steamid]);
+            }
+            $scope.leaderboardLoading = false;
+            return function(data, status) {
+              return $scope.leaderboardLoading = false;
+            };
+          });
+          return function(data, status) {
+            return $scope.leaderboardLoading = false;
+          };
+        });
+      };
+      $scope.changeSorting = function() {
+        if ($scope.rankSort === 1) {
+          $scope.rankSort = -1;
+        } else {
+          $scope.rankSort = 1;
+        }
+        return $scope.changePage();
+      };
+      return $scope.sortClass = function(reverse) {
+        if (reverse == null) {
+          reverse = false;
+        }
+        if ($scope.rankSort === 1) {
+          if (reverse) {
+            return 'icon-chevron-down';
+          } else {
+            return 'icon-chevron-up';
+          }
+        } else {
+          if (reverse) {
+            return 'icon-chevron-up';
+          } else {
+            return 'icon-chevron-down';
+          }
+        }
+      };
     }
   ]);
 
@@ -412,7 +524,7 @@
           })();
           users = $filter('unique')(users);
           $scope.uniqueUsersCount = users.length;
-          return User.query({
+          User.query({
             _id: {
               $in: users
             }
@@ -429,12 +541,14 @@
               angular.extend(entry, users[entry.steamid]);
             }
             $scope.setFilters();
-            return $scope.leaderboardLoading = false;
-          }, function(data, status) {
-            return $scope.leaderboardLoading = false;
+            $scope.leaderboardLoading = false;
+            return function(data, status) {
+              return $scope.leaderboardLoading = false;
+            };
           });
-        }, function(data) {
-          return $scope.leaderboardLoading = false;
+          return function(data) {
+            return $scope.leaderboardLoading = false;
+          };
         });
       };
       $scope.sort = {};
@@ -447,125 +561,6 @@
       return $scope.sort.changeSorting = function() {
         $scope.oldChangeSorting.apply(this, arguments);
         return $scope.setFilters();
-      };
-    }
-  ]);
-
-  app.controller('CustomUrlCtrl', [
-    '$scope', '$routeParams', '$http', '$location', function($scope, $routeParams, $http, $location) {
-      $scope.loading = true;
-      $scope.customUrl = $routeParams.customurl;
-      return $http.get('/api/id/' + $routeParams.customurl).success(function(data) {
-        $scope.loading = false;
-        if ((data.steamid != null) && data.steamid !== '') {
-          $scope.steamid = data.steamid;
-          $scope.redirecting = true;
-          return $location.path('/profiles/' + $scope.steamid);
-        } else {
-          return $scope.error = true;
-        }
-      }).error(function(data, status) {
-        $scope.loading = false;
-        return $scope.error = true;
-      });
-    }
-  ]);
-
-  app.controller('LeaderboardCtrl', [
-    '$scope', '$rootScope', '$routeParams', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, Leaderboard, User) {
-      $scope.leaderboardName = $routeParams.leaderboard.replace('_', ' ');
-      $rootScope.title = "Leaderboard " + $scope.leaderboardName;
-      $scope.rankSort = 1;
-      $scope.leaderboardLoading = true;
-      $scope.pagination = {
-        currentPage: 1,
-        perPage: 20
-      };
-      Leaderboard.count({
-        difficulty: $scope.leaderboardName
-      }, function(data) {
-        $scope.leaderboardCount = parseInt(data);
-        $scope.pagination.numPages = function() {
-          return Math.ceil($scope.leaderboardCount / this.perPage);
-        };
-        return $scope.changePage();
-      }, function(data, status) {
-        return $scope.leaderboardLoading = false;
-      });
-      $scope.$watch('pagination.currentPage', function() {
-        return $scope.changePage();
-      });
-      $scope.changePage = function() {
-        $scope.leaderboardLoading = true;
-        return Leaderboard.query({
-          difficulty: $scope.leaderboardName
-        }, {
-          sort: {
-            rank: $scope.rankSort
-          },
-          limit: $scope.pagination.perPage,
-          skip: $scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage
-        }, function(data) {
-          var entry, users;
-          $scope.leaderboard = data;
-          users = (function() {
-            var _i, _len, _results;
-            _results = [];
-            for (_i = 0, _len = data.length; _i < _len; _i++) {
-              entry = data[_i];
-              _results.push(entry.steamid);
-            }
-            return _results;
-          })();
-          return User.query({
-            _id: {
-              $in: users
-            }
-          }, function(data) {
-            var user, _i, _j, _len, _len1, _ref;
-            users = {};
-            for (_i = 0, _len = data.length; _i < _len; _i++) {
-              user = data[_i];
-              users[user._id] = user;
-            }
-            _ref = $scope.leaderboard;
-            for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-              entry = _ref[_j];
-              angular.extend(entry, users[entry.steamid]);
-            }
-            return $scope.leaderboardLoading = false;
-          }, function(data, status) {
-            return $scope.leaderboardLoading = false;
-          });
-        }, function(data, status) {
-          return $scope.leaderboardLoading = false;
-        });
-      };
-      $scope.changeSorting = function() {
-        if ($scope.rankSort === 1) {
-          $scope.rankSort = -1;
-        } else {
-          $scope.rankSort = 1;
-        }
-        return $scope.changePage();
-      };
-      return $scope.sortClass = function(reverse) {
-        if (reverse == null) {
-          reverse = false;
-        }
-        if ($scope.rankSort === 1) {
-          if (reverse) {
-            return 'icon-chevron-down';
-          } else {
-            return 'icon-chevron-up';
-          }
-        } else {
-          if (reverse) {
-            return 'icon-chevron-up';
-          } else {
-            return 'icon-chevron-down';
-          }
-        }
       };
     }
   ]);
@@ -611,64 +606,148 @@
           $scope.usersLoading = false;
           if (data.length === 1) {
             $scope.redirecting = true;
-            return $location.path("/profiles/" + data[0]._id);
+            $location.path("/profiles/" + data[0]._id);
           }
-        }, function(data, status) {
-          return $scope.usersLoading = false;
+          return function(data, status) {
+            return $scope.usersLoading = false;
+          };
         });
       };
     }
   ]);
 
-  app.controller('CompareCtrl', [
-    '$scope', '$rootScope', 'Leaderboard', function($scope, $rootScope, Leaderboard) {
-      $rootScope.title = 'Compare Users';
-      return $rootScope.$watch('comparison', function() {
-        var entry, users_array;
-        if ($rootScope.comparison.length > 0) {
-          users_array = (function() {
-            var _i, _len, _ref, _results;
-            _ref = $rootScope.comparison;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              entry = _ref[_i];
-              _results.push(entry.steamid);
-            }
-            return _results;
-          })();
-          $scope.leaderboardLoading = true;
-          return Leaderboard.query({
-            steamid: {
-              $in: users_array
-            }
-          }, {
-            sort: {
-              steamid: 1,
-              difficulty: 1
-            }
-          }, function(data) {
-            var _i, _j, _len, _len1, _ref;
-            $scope.users = {};
-            _ref = $rootScope.comparison;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              entry = _ref[_i];
-              $scope.users[entry.steamid] = {
-                username: entry.username,
-                avatar: entry.avatar,
-                leaderboard: {}
-              };
-            }
-            for (_j = 0, _len1 = data.length; _j < _len1; _j++) {
-              entry = data[_j];
-              $scope.users[entry.steamid].leaderboard[entry.difficulty] = entry;
-            }
-            return $scope.leaderboardLoading = false;
-          }, function(data, status) {
-            return $scope.leaderboardLoading = false;
-          });
+  app.controller('UsersCustomUrlCtrl', [
+    '$scope', '$routeParams', '$http', '$location', function($scope, $routeParams, $http, $location) {
+      $scope.loading = true;
+      $scope.customUrl = $routeParams.customurl;
+      return $http.get('/api/id/' + $routeParams.customurl).success(function(data) {
+        $scope.loading = false;
+        if ((data.steamid != null) && data.steamid !== '') {
+          $scope.steamid = data.steamid;
+          $scope.redirecting = true;
+          return $location.path('/profiles/' + $scope.steamid);
+        } else {
+          return $scope.error = true;
         }
+      }).error(function(data, status) {
+        $scope.loading = false;
+        return $scope.error = true;
       });
     }
   ]);
+
+  app.directive('activelink', [
+    '$location', function($location) {
+      return {
+        restrict: 'A',
+        link: function(scope, element, attrs) {
+          scope.$location = $location;
+          return scope.$watch('$location.path()', function(locationPath) {
+            var isCorrectLocation;
+            if (attrs.noactivelinkindex != null) {
+              isCorrectLocation = attrs.activelink.substring(1) === locationPath;
+            } else {
+              isCorrectLocation = locationPath.indexOf(attrs.activelink.substring(1)) > -1;
+            }
+            if (attrs.activelink.length > 0 && isCorrectLocation) {
+              return element.addClass('active');
+            } else {
+              return element.removeClass('active');
+            }
+          });
+        }
+      };
+    }
+  ]);
+
+  app.directive('comparison', [
+    '$rootScope', '$compile', function($rootScope, $compile) {
+      return {
+        restrict: 'E',
+        replace: true,
+        link: function(scope, element, attrs) {
+          element.css('margin', '5px');
+          if (attrs.donthide == null) {
+            element.css('display', 'none');
+            element.parent().bind('mouseenter', function() {
+              return element.css('display', 'inline');
+            });
+            element.parent().bind('mouseleave', function() {
+              return element.css('display', 'none');
+            });
+          }
+          return scope.addToComparison = function() {
+            var comparison, entry, found, _i, _len;
+            if ((attrs.steamid != null) && (attrs.username != null) && (attrs.avatar != null)) {
+              comparison = JSON.parse(localStorage.getItem('comparison'));
+              found = false;
+              for (_i = 0, _len = comparison.length; _i < _len; _i++) {
+                entry = comparison[_i];
+                if (entry.steamid === attrs.steamid) {
+                  found = true;
+                }
+              }
+              if (!found) {
+                comparison.push({
+                  steamid: attrs.steamid,
+                  username: attrs.username,
+                  avatar: attrs.avatar
+                });
+                localStorage.setItem('comparison', angular.toJson(comparison));
+                return $rootScope.comparison = comparison;
+              }
+            }
+          };
+        }
+      };
+    }
+  ]);
+
+  app.factory('Leaderboard', [
+    '$dbResourceHttp', function($dbResourceHttp) {
+      return $dbResourceHttp('leaderboard');
+    }
+  ]);
+
+  app.factory('User', [
+    '$dbResourceHttp', function($dbResourceHttp) {
+      return $dbResourceHttp('users');
+    }
+  ]);
+
+  app.factory('Settings', [
+    '$dbResourceHttp', function($dbResourceHttp) {
+      return $dbResourceHttp('settings');
+    }
+  ]);
+
+  app.factory('TableSort', function() {
+    var TableSort;
+    return TableSort = {
+      column: '',
+      descending: false,
+      icons: {
+        ascending: 'icon-chevron-up',
+        descending: 'icon-chevron-down'
+      },
+      sortClass: function(column) {
+        if (column === this.column) {
+          if (this.descending) {
+            return this.icons.descending;
+          } else {
+            return this.icons.ascending;
+          }
+        }
+      },
+      changeSorting: function(column) {
+        if (column === this.column) {
+          return this.descending = !this.descending;
+        } else {
+          this.column = column;
+          return this.descending = false;
+        }
+      }
+    };
+  });
 
 }).call(this);

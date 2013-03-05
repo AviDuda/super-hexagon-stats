@@ -39,8 +39,9 @@ Or try [pik](https://github.com/vertiginous/pik/) if you are on Windows, but I h
 2. Go to the directory and run `bundle install` in the terminal.
 3. Open file `env_variables.rb.example`, rename it to `env_variables.rb` and change it to your needs (used in development, use e.g. Heroku config in production).
 4. Run `rake hex:update_data` to update leaderboard and users. It will take a while, Steam API is slow.
-5. Run `rake js:compile` to compile `coffescripts/app.coffee`. It's a good idea to put it in a shell script before launching the server
+5. Install [Node.js](http://nodejs.org) and then `sudo npm install -g coffee-script` to install CoffeeScript compiler.
+6. Run `rake js:compile` to compile CoffeeScript files in the `coffescripts` directory. It's a good idea to put it in a shell script before launching the server
 (or if you use [RubyMine](http://www.jetbrains.com/ruby/), just set *Run Rake task js:compile* in the *Before launch* option).
-6. Run Super Hexagon stats with `thin start`, `rackup` or however you want!
+7. Run Super Hexagon stats with `thin start`, `rackup` or however you want!
 
 Enjoy!

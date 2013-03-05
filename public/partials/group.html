@@ -1,0 +1,33 @@
+<div class="page-header" ui-if="group">
+  <div class="pull-right">
+    <a class="btn btn-large" ng-href="http://steamcommunity.com/gid/{{ group.gid }}">View group on Steam</a>
+  </div>
+  <h1>
+    <img ng-src="{{$root.getAvatar(group.avatar, 'medium')}}" style="padding-right: 10px;">{{ group.name }}
+    <small>{{ group.memberCount }} members in group</small>
+  </h1>
+</div>
+
+<div class="alert alert-error">This feature is experimental and doesn't work for larger groups. Sorting doesn't work yet too.</div>
+
+<div ui-if="groupLoading" class="alert alert-info">Loading group... It might take a while depending on the group size.</div>
+<div ui-if="!groupLoading && !group" class="alert">Group not found..</div>
+<div ui-if="!groupLoading && group && !users" class="alert">Group has too many members. This will be fixed soon!</div>
+
+<div ui-if="!groupLoading && group && users">
+  <p><strong>{{ unique_users.length }}</strong> members have entries in the leaderboard.</p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th ng-repeat="difficulty in $root.difficulties">{{ difficulty }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="(steamid, user) in users">
+        <td><a ng-href="#/profiles/{{ steamid }}"><img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a></td>
+        <td ng-repeat="difficulty in $root.difficulties">{{ user.leaderboard[difficulty].time || '-' }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
