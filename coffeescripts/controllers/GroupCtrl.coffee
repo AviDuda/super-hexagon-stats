@@ -10,6 +10,7 @@ app.controller 'GroupCtrl', ['$scope', '$rootScope', '$routeParams', '$location'
   $http.get("/api/#{url_type}/#{$routeParams.groupid}")
     .success (data) ->
       $scope.group = data
+      $rootScope.title = "Group #{$scope.group.name}"
 
       # TODO Mongo doesn't want to load too many values in $in
       User.query(

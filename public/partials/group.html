@@ -25,7 +25,10 @@
     </thead>
     <tbody>
       <tr ng-repeat="(steamid, user) in users">
-        <td><a ng-href="#/profiles/{{ steamid }}"><img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a></td>
+        <td><a ng-href="#/profiles/{{ steamid }}">
+          <img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a>
+          <comparison ng-include="'comparison/default'" steamid="{{ steamid }}" username="{{ user.username }}" avatar="{{ user.avatar }}"></comparison>
+        </td>
         <td ng-repeat="difficulty in $root.difficulties">{{ user.leaderboard[difficulty].time || '-' }}</td>
       </tr>
     </tbody>

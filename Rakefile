@@ -186,8 +186,6 @@ namespace :js do
         end
       end
 
-      puts "coffee -pj #{files_to_compile.join(' ')}"
-
       File.open File.join(settings.root, 'public', 'javascripts', 'app.js'), 'w' do |js|
         js.write `coffee -pjl #{files_to_compile.join(' ')}`
       end

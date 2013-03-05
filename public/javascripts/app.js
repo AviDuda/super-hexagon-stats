@@ -206,6 +206,7 @@
       $scope.groupLoading = true;
       return $http.get("/api/" + url_type + "/" + $routeParams.groupid).success(function(data) {
         $scope.group = data;
+        $rootScope.title = "Group " + $scope.group.name;
         return User.query({
           _id: {
             $in: data.members
