@@ -1,0 +1,26 @@
+<div class="page-header">
+  <h1>Stats</h1>
+</div>
+
+<div class="row">
+  <div class="span6 offset3">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Current</th>
+          <th>Before Humble Bundle</th>
+          <th>Difference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="stat in stats">
+          <td>{{ stat.name }}</td>
+          <td>{{ stat.value }}</td>
+          <td>{{ statsBeforeHumbleBundle[stat.name] }}</td>
+          <td>{{ stat.value - statsBeforeHumbleBundle[stat.name] }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

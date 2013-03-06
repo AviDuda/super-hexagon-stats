@@ -33,6 +33,9 @@
       }).when('/compare', {
         templateUrl: 'partials/compare.html',
         controller: 'CompareCtrl'
+      }).when('/stats', {
+        templateUrl: 'partials/stats.html',
+        controller: 'StatsCtrl'
       }).otherwise({
         redirectTo: '/'
       });
@@ -660,6 +663,53 @@
           };
         });
       };
+    }
+  ]);
+
+  app.controller('StatsCtrl', [
+    '$scope', '$rootScope', 'Leaderboard', 'User', function($scope, $rootScope, Leaderboard, User) {
+      var difficulty, _i, _len, _ref, _results;
+      $rootScope.title = 'Stats';
+      $scope.stats = [];
+      $scope.statsBeforeHumbleBundle = {
+        'Users': 48609,
+        'Leaderboard entries': 174575,
+        'Hexagon entries': 48437,
+        'Hexagoner entries': 38094,
+        'Hexagonest entries': 38764,
+        'Hyper Hexagon entries': 26139,
+        'Hyper Hexagoner entries': 14223,
+        'Hyper Hexagonest entries': 8918
+      };
+      User.count({}, function(data) {
+        return $scope.stats.push({
+          name: 'Users',
+          value: data
+        });
+      });
+      Leaderboard.count({}, function(data) {
+        return $scope.stats.push({
+          name: 'Leaderboard entries',
+          value: data
+        });
+      });
+      $scope.getDifficultyEntries = function(diff) {
+        return Leaderboard.count({
+          difficulty: diff
+        }, function(data) {
+          return $scope.stats.push({
+            name: "" + diff + " entries",
+            value: data
+          });
+        });
+      };
+      _ref = $rootScope.difficulties;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        difficulty = _ref[_i];
+        _results.push($scope.getDifficultyEntries(difficulty));
+      }
+      return _results;
     }
   ]);
 

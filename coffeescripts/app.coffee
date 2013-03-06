@@ -12,6 +12,7 @@ app.config ['$routeProvider', ($routeProvider) ->
     .when('/groups/:groupid', {templateUrl: 'partials/group.html', controller: 'GroupCtrl'})
     .when('/search/nickname/:nickname', {templateUrl: 'partials/search_nickname.html', controller: 'SearchNicknameCtrl'})
     .when('/compare', {templateUrl: 'partials/compare.html', controller: 'CompareCtrl'})
+    .when('/stats', {templateUrl: 'partials/stats.html', controller: 'StatsCtrl'})
     .otherwise({ redirectTo: '/' })
 ]
 
