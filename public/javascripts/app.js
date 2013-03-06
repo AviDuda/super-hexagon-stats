@@ -456,9 +456,54 @@
       };
       $scope.setFilters();
       $scope.oldChangeSorting = $scope.sort.changeSorting;
-      return $scope.sort.changeSorting = function() {
+      $scope.sort.changeSorting = function() {
         $scope.oldChangeSorting.apply(this, arguments);
         return $scope.setFilters();
+      };
+      $scope.achievements = {
+        'Hexagon': {
+          name: 'Point',
+          description: 'Complete the Hexagon stage',
+          locked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/712eaa3b5a85249fc122a2db3aa323b6a12023d5.jpg',
+          unlocked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/7b6f8d9d17c6d05d99a037191be6b60678493a0e.jpg'
+        },
+        'Hexagoner': {
+          name: 'Line',
+          description: 'Complete the Hexagoner stage',
+          locked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/721a93744602b9b7e079f47bed66d9077669f27c.jpg',
+          unlocked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/31441aba2aa29375cd2e1c9e2390f95dc9e268c0.jpg'
+        },
+        'Hexagonest': {
+          name: 'Triangle',
+          description: 'Complete the Hexagonest stage',
+          locked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/cbedaecd552c882f5718f562fa23f0ee4cf05433.jpg',
+          unlocked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/d320ccbf78d931c8a5f250b31d2c5f6b7d0338a7.jpg'
+        },
+        'Hyper Hexagon': {
+          name: 'Square',
+          description: 'Complete the Hyper Hexagon stage',
+          locked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/9eed0c36085ea1f6ac731037a4ccec2a205d621d.jpg',
+          unlocked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/f7f5e10ae41f516b9b823fff6973822d3c608c19.jpg'
+        },
+        'Hyper Hexagoner': {
+          name: 'Pentagon',
+          description: 'Complete the Hyper Hexagoner stage',
+          locked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/4d48c4b0155970d2b6b7d6e32dcccf9c9e3ef0fe.jpg',
+          unlocked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/4a7aa0bfb5b4025b18f0ef5e098c36a7a2e1d4d0.jpg'
+        },
+        'Hyper Hexagonest': {
+          name: 'Hexagon',
+          description: 'Complete the Hyper Hexagonest stage, and witness the end',
+          locked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/2e2de0af6b0f5732cbbad3ca8c13f99f8941d21e.jpg',
+          unlocked: 'http://media.steampowered.com/steamcommunity/public/images/apps/221640/3381965e9b2b07819d53ad5c634ba37158c5f9c1.jpg'
+        }
+      };
+      return $scope.getAchievementForTime = function(time, difficulty) {
+        if (time >= 60) {
+          return $scope.achievements[difficulty].unlocked;
+        } else {
+          return $scope.achievements[difficulty].locked;
+        }
       };
     }
   ]);

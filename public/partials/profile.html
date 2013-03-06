@@ -36,7 +36,10 @@
               </thead>
               <tbody>
                 <tr ng-repeat="entry in leaderboard">
-                  <td>{{ entry.difficulty }}</td>
+                  <td>
+                    <img ng-src="{{ getAchievementForTime(entry.time, entry.difficulty) }}" class="achievement" title="{{ achievements[entry.difficulty].name }} - {{ achievements[entry.difficulty].description }}">
+                    {{ entry.difficulty }}
+                  </td>
                   <td>{{ entry.time.toFixed(2) }}</td>
                   <td>{{ entry.rank }}</td>
                 </tr>
