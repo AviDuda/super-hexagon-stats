@@ -3,6 +3,17 @@ app.controller 'StatsCtrl', ['$scope', '$rootScope', 'Leaderboard', 'User', ($sc
 
   $scope.stats = []
 
+  $scope.statsNames = [
+    'Users'
+    'Leaderboard entries'
+    'Hexagon entries'
+    'Hexagoner entries'
+    'Hexagonest entries'
+    'Hyper Hexagon entries'
+    'Hyper Hexagoner entries'
+    'Hyper Hexagonest entries'
+  ]
+
   $scope.statsBeforeHumbleBundle =
     'Users': 48609
     'Leaderboard entries': 174575
@@ -13,12 +24,12 @@ app.controller 'StatsCtrl', ['$scope', '$rootScope', 'Leaderboard', 'User', ($sc
     'Hyper Hexagoner entries': 14223
     'Hyper Hexagonest entries': 8918
 
-  User.count {}, (data) -> $scope.stats.push { name: 'Users', value: data }
+  User.count {}, (data) -> $scope.stats['Users'] = data
 
-  Leaderboard.count {}, (data) -> $scope.stats.push { name: 'Leaderboard entries', value: data }
+  Leaderboard.count {}, (data) -> $scope.stats['Leaderboard entries'] = data
 
   $scope.getDifficultyEntries = (diff) ->
-    Leaderboard.count { difficulty: diff }, (data) -> $scope.stats.push { name: "#{diff} entries", value: data }
+    Leaderboard.count { difficulty: diff }, (data) -> $scope.stats["#{diff} entries"] = data
 
   for difficulty in $rootScope.difficulties
     $scope.getDifficultyEntries difficulty

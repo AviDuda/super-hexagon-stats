@@ -33,9 +33,9 @@ app.controller 'LeaderboardCtrl', ['$scope', '$rootScope', '$routeParams', 'Lead
     Leaderboard.query(
       { difficulty: $scope.leaderboardName },
       {
-      sort: { rank: $scope.rankSort },
-      limit: $scope.pagination.perPage,
-      skip: ($scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage)
+        sort: { rank: $scope.rankSort },
+        limit: $scope.pagination.perPage,
+        skip: ($scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage)
       },
     (data) ->
       $scope.leaderboard = data

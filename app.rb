@@ -131,17 +131,39 @@ end
 
 get %r{/api/(?<type>(gid|groups))/(?<groupid>.*)}, provides: :json do |type, groupid|
   begin
-    response = Net::HTTP.get_response(URI.parse("http://steamcommunity.com/#{type}/#{groupid}/memberslistxml/?xml=1"))
+    current_page = 1
+    total_pages = 1
 
-    response = MultiXml.parse(response.body).to_hash
+    all_members = []
 
-    output = {
-      gid: response['memberList']['groupID64'],
-      name: response['memberList']['groupDetails']['groupName'],
-      avatar: response['memberList']['groupDetails']['avatarIcon'][67..-5],
-      memberCount: response['memberList']['memberCount'],
-      members: response['memberList']['members']['steamID64'].map { |member| member } # TODO get all members, not just the first page
-    }
+    output = {}
+
+    begin
+      response = Net::HTTP.get_response(URI.parse("http://steamcommunity.com/#{type}/#{groupid}/memberslistxml/?xml=1&p=#{current_page}"))
+
+      response = MultiXml.parse(response.body).to_hash
+
+      if current_page == 1
+        total_pages = response['memberList']['totalPages'].to_i
+
+        total_pages = 9 if total_pages >= 10 # check 10k members, not more - it would be too slow
+
+        output = {
+          gid: response['memberList']['groupID64'],
+          name: response['memberList']['groupDetails']['groupName'],
+          avatar: response['memberList']['groupDetails']['avatarIcon'][67..-5],
+          memberCount: response['memberList']['memberCount'],
+        }
+      end
+
+      all_members.push response['memberList']['members']['steamID64']
+
+      current_page += 1
+    end while current_page <= total_pages
+
+    all_members.flatten!
+
+    output[:membersWithEntries] = db.collection('users').find({ :_id => { '$in' => all_members } }, { fields: [:_id] }).to_a.map { |user| user['_id'] }
 
     MultiJson.dump(output)
   rescue Exception => e

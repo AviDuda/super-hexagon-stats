@@ -8,28 +8,51 @@
   </h1>
 </div>
 
-<div class="alert alert-error">This feature is experimental and doesn't work for larger groups. Sorting doesn't work yet too.</div>
-
 <div ui-if="groupLoading" class="alert alert-info">Loading group... It might take a while depending on the group size.</div>
-<div ui-if="!groupLoading && !group" class="alert">Group not found..</div>
-<div ui-if="!groupLoading && group && !users" class="alert">Group has too many members. This will be fixed soon!</div>
+<div ui-if="!groupLoading && !group" class="alert">Group not found.</div>
 
-<div ui-if="!groupLoading && group && users">
-  <p><strong>{{ unique_users.length }}</strong> members have entries in the leaderboard.</p>
-  <table class="table">
+<div ui-if="group">
+  <p ui-if="group.memberCount >= 10000" class="alert">This group has too many members, checking only 10000 members for performance reasons.</p>
+
+  <p ui-if="group.membersWithEntries.length >= 0"><strong>{{ group.membersWithEntries.length }}</strong> members have entries in the leaderboard.</p>
+
+  <div class="row-fluid">
+    <ul class="nav nav-pills span10">
+      <li ng-class="{active: viewDifficulties['all']}"><a href="" ng-click="switchDifficultyView('all')">View all</a></li>
+      <li ng-repeat="difficulty in $root.difficulties" ng-class="{active: viewDifficulties[difficulty]}">
+        <a href="" ng-click="switchDifficultyView(difficulty)">{{ difficulty }}</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="row" ui-if="pagination.numPages() && pagination.numPages() > 1">
+  <div class="span8">
+    <pagination num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
+  </div>
+</div>
+
+  <div ui-if="leaderboardLoading" class="alert alert-info">Loading...</div>
+
+  <div ui-if="!leaderboardLoading && !leaderboard" class="alert">Error while loading friend leaderboard.</div>
+
+  <table class="table table-hover" ui-if="!leaderboardLoading && leaderboard">
     <thead>
       <tr>
         <th>User</th>
-        <th ng-repeat="difficulty in $root.difficulties">{{ difficulty }}</th>
+        <th ng-click="sort.changeSorting('difficulty')" class="sortable"><i ng-class="sort.sortClass('difficulty')"></i>Difficulty</th>
+        <th ng-click="sort.changeSorting('time')" class="sortable"><i ng-class="sort.sortClass('time')"></i>Time</th>
+        <th ng-click="sort.changeSorting('rank')" class="sortable"><i ng-class="sort.sortClass('rank')"></i>Global position</th>
       </tr>
     </thead>
     <tbody>
-      <tr ng-repeat="(steamid, user) in users">
-        <td><a ng-href="#/profiles/{{ steamid }}">
-          <img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a>
-          <comparison ng-include="'comparison/default'" steamid="{{ steamid }}" username="{{ user.username }}" avatar="{{ user.avatar }}"></comparison>
+      <tr ng-repeat="entry in leaderboard">
+        <td>
+          <a ng-href="#/profiles/{{ entry.steamid }}"><img ng-src="{{ $root.getAvatar(entry.avatar) }}" class="avatar">{{ entry.username }}</a>
+          <comparison ng-include="'comparison/default'" steamid="{{ entry.steamid }}" username="{{ entry.username }}" avatar="{{ entry.avatar }}"></comparison>
         </td>
-        <td ng-repeat="difficulty in $root.difficulties">{{ user.leaderboard[difficulty].time.toFixed(2) || '-' }}</td>
+        <td>{{ entry.difficulty }}</td>
+        <td>{{ entry.time.toFixed(2) }}</td>
+        <td>{{ entry.rank }}</td>
       </tr>
     </tbody>
   </table>

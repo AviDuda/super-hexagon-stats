@@ -8,17 +8,18 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>Current</th>
+          <th>Current stats</th>
           <th>Before Humble Bundle</th>
           <th>Difference</th>
         </tr>
       </thead>
       <tbody>
-        <tr ng-repeat="stat in stats">
-          <td>{{ stat.name }}</td>
-          <td>{{ stat.value }}</td>
-          <td>{{ statsBeforeHumbleBundle[stat.name] }}</td>
-          <td>{{ stat.value - statsBeforeHumbleBundle[stat.name] }}</td>
+        <tr ng-repeat="name in statsNames">
+          <td>{{ name }}</td>
+          <td>{{ stats[name] || 'loading...' }}</td>
+          <td>{{ statsBeforeHumbleBundle[name] }}</td>
+          <td ui-if="stats[name]">{{ stats[name] - statsBeforeHumbleBundle[name] }}</td>
+          <td ui-if="!stats[name]">loading...</td>
         </tr>
       </tbody>
     </table>

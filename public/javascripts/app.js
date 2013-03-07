@@ -12,9 +12,6 @@
       }).when('/leaderboard/:leaderboard', {
         templateUrl: 'partials/leaderboard.html',
         controller: 'LeaderboardCtrl'
-      }).when('/leaderboard', {
-        templateUrl: 'partials/leaderboard.html',
-        controller: 'LeaderboardCtrl'
       }).when('/profiles/:steamid64', {
         templateUrl: 'partials/profile.html',
         controller: 'ProfileCtrl'
@@ -199,7 +196,7 @@
   ]);
 
   app.controller('GroupCtrl', [
-    '$scope', '$rootScope', '$routeParams', '$location', '$http', '$filter', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, $location, $http, $filter, Leaderboard, User) {
+    '$scope', '$rootScope', '$routeParams', '$location', '$http', '$filter', 'TableSort', 'Leaderboard', 'User', function($scope, $rootScope, $routeParams, $location, $http, $filter, TableSort, Leaderboard, User) {
       var url_type;
       $rootScope.title = 'Group';
       url_type = 'gid';
@@ -207,45 +204,130 @@
         url_type = 'groups';
       }
       $scope.groupLoading = true;
-      return $http.get("/api/" + url_type + "/" + $routeParams.groupid).success(function(data) {
+      $scope.pagination = {
+        currentPage: 1,
+        perPage: 20
+      };
+      $http.get("/api/" + url_type + "/" + $routeParams.groupid).success(function(data) {
         $scope.group = data;
         $rootScope.title = "Group " + $scope.group.name;
-        return User.query({
-          _id: {
-            $in: data.members
-          }
-        }, function(data) {
-          var entry, _i, _len;
-          $scope.users = {};
-          $scope.unique_users = [];
-          for (_i = 0, _len = data.length; _i < _len; _i++) {
-            entry = data[_i];
-            $scope.users[entry._id] = {
-              username: entry.username,
-              avatar: entry.avatar,
-              leaderboard: {}
-            };
-            $scope.unique_users.push(entry._id);
-          }
-          return Leaderboard.query({
-            steamid: {
-              $in: $scope.unique_users
-            }
-          }, function(data) {
-            var _j, _len1;
-            for (_j = 0, _len1 = data.length; _j < _len1; _j++) {
-              entry = data[_j];
-              $scope.users[entry.steamid].leaderboard[entry.difficulty] = entry;
-            }
-            return $scope.groupLoading = false;
-          }, function(data, status) {
-            return $scope.groupLoading = false;
-          });
-        }, function(data, status) {
-          return $scope.groupLoading = false;
-        });
+        $scope.groupLoading = false;
+        return $scope.switchDifficultyView('all');
       }).error(function(data, status) {
         return $scope.groupLoading = false;
+      });
+      $scope.viewDifficulties = {};
+      $scope.switchDifficultyView = function(difficulty) {
+        var diff, _i, _j, _len, _len1, _ref, _ref1;
+        $scope.leaderboardLoading = true;
+        $scope.viewDifficulties[difficulty] = !$scope.viewDifficulties[difficulty];
+        if (difficulty === 'all') {
+          _ref = $rootScope.difficulties;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            diff = _ref[_i];
+            $scope.viewDifficulties[diff] = $scope.viewDifficulties[difficulty];
+          }
+        }
+        $scope.query_difficulties = [];
+        if ($scope.viewDifficulties['all']) {
+          $scope.query_difficulties = $rootScope.difficulties;
+        } else {
+          _ref1 = $rootScope.difficulties;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            difficulty = _ref1[_j];
+            if ($scope.viewDifficulties[difficulty]) {
+              $scope.query_difficulties.push(difficulty);
+            }
+          }
+        }
+        $scope.pagination.currentPage = 1;
+        Leaderboard.count({
+          difficulty: {
+            $in: $scope.query_difficulties
+          },
+          steamid: {
+            $in: $scope.group.membersWithEntries
+          }
+        }, function(data) {
+          return $scope.pagination.numPages = function() {
+            return Math.ceil(data / this.perPage);
+          };
+        }, function(data, status) {
+          return $scope.leaderboardLoading = false;
+        });
+        return $scope.getLeaderboard();
+      };
+      $scope.getLeaderboard = function() {
+        var sortBy;
+        $scope.leaderboardLoading = true;
+        sortBy = {};
+        sortBy[$scope.sort.column] = 1;
+        if ($scope.sort.descending) {
+          sortBy[$scope.sort.column] = -1;
+        }
+        return Leaderboard.query({
+          difficulty: {
+            $in: $scope.query_difficulties
+          },
+          steamid: {
+            $in: $scope.group.membersWithEntries
+          }
+        }, {
+          sort: sortBy,
+          limit: $scope.pagination.perPage,
+          skip: $scope.pagination.currentPage * $scope.pagination.perPage - $scope.pagination.perPage,
+          fields: {
+            _id: 0
+          }
+        }, function(data) {
+          var entry, users;
+          $scope.leaderboard = data;
+          users = (function() {
+            var _i, _len, _results;
+            _results = [];
+            for (_i = 0, _len = data.length; _i < _len; _i++) {
+              entry = data[_i];
+              _results.push(entry.steamid);
+            }
+            return _results;
+          })();
+          users = $filter('unique')(users);
+          return User.query({
+            _id: {
+              $in: users
+            }
+          }, function(data) {
+            var user, _i, _j, _len, _len1, _ref;
+            users = {};
+            for (_i = 0, _len = data.length; _i < _len; _i++) {
+              user = data[_i];
+              users[user._id] = user;
+            }
+            _ref = $scope.leaderboard;
+            for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+              entry = _ref[_j];
+              angular.extend(entry, users[entry.steamid]);
+            }
+            return $scope.leaderboardLoading = false;
+          }, function(data, status) {
+            return $scope.leaderboardLoading = false;
+          });
+        }, function(data) {
+          return $scope.leaderboardLoading = false;
+        });
+      };
+      $scope.sort = {};
+      angular.extend($scope.sort, TableSort);
+      $scope.sort.column = 'rank';
+      $scope.oldChangeSorting = $scope.sort.changeSorting;
+      $scope.sort.changeSorting = function(column) {
+        $scope.oldChangeSorting.apply(this, arguments);
+        return $scope.getLeaderboard();
+      };
+      return $scope.$watch('pagination.currentPage', function() {
+        if ($scope.group != null) {
+          return $scope.getLeaderboard();
+        }
       });
     }
   ]);
@@ -671,6 +753,7 @@
       var difficulty, _i, _len, _ref, _results;
       $rootScope.title = 'Stats';
       $scope.stats = [];
+      $scope.statsNames = ['Users', 'Leaderboard entries', 'Hexagon entries', 'Hexagoner entries', 'Hexagonest entries', 'Hyper Hexagon entries', 'Hyper Hexagoner entries', 'Hyper Hexagonest entries'];
       $scope.statsBeforeHumbleBundle = {
         'Users': 48609,
         'Leaderboard entries': 174575,
@@ -682,25 +765,16 @@
         'Hyper Hexagonest entries': 8918
       };
       User.count({}, function(data) {
-        return $scope.stats.push({
-          name: 'Users',
-          value: data
-        });
+        return $scope.stats['Users'] = data;
       });
       Leaderboard.count({}, function(data) {
-        return $scope.stats.push({
-          name: 'Leaderboard entries',
-          value: data
-        });
+        return $scope.stats['Leaderboard entries'] = data;
       });
       $scope.getDifficultyEntries = function(diff) {
         return Leaderboard.count({
           difficulty: diff
         }, function(data) {
-          return $scope.stats.push({
-            name: "" + diff + " entries",
-            value: data
-          });
+          return $scope.stats["" + diff + " entries"] = data;
         });
       };
       _ref = $rootScope.difficulties;

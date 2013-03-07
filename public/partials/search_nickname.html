@@ -16,7 +16,7 @@
 
   <div ui-if="!usersLoading && !users" class="alert">Error while loading users.</div>
 
-  <div ui-if="!usersLoading && users.length == 0" class="alert alert-info">No user found.</div>
+  <div ui-if="!usersLoading && users.length == 0" class="alert alert-info">No user found - user must have an entry in the Super Hexagon leaderboard.</div>
 
   <div ui-if="!usersLoading && users.length > 0">
     <div class="span4">

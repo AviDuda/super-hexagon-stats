@@ -5,7 +5,6 @@ app.config ['$routeProvider', ($routeProvider) ->
   $routeProvider
     .when('/', {templateUrl: 'partials/home.html', controller: 'HomeCtrl'})
     .when('/leaderboard/:leaderboard', {templateUrl: 'partials/leaderboard.html', controller: 'LeaderboardCtrl'})
-    .when('/leaderboard', {templateUrl: 'partials/leaderboard.html', controller: 'LeaderboardCtrl'})
     .when('/profiles/:steamid64', {templateUrl: 'partials/profile.html', controller: 'ProfileCtrl'})
     .when('/id/:customurl', {templateUrl: 'partials/users_custom_url.html', controller: 'UsersCustomUrlCtrl'})
     .when('/gid/:groupid', {templateUrl: 'partials/group.html', controller: 'GroupCtrl'})
@@ -33,7 +32,7 @@ app.run ['$rootScope', '$location', '$window', 'Settings', ($rootScope, $locatio
   $rootScope.$on '$routeChangeSuccess', ->
     $rootScope.isViewLoading = false
     if $window._gaq?
-      $window._gaq.push(['_trackPageview', $location.path()]);
+      $window._gaq.push(['_trackPageview', $location.path()])
 
   $rootScope.getAvatar = (url, size = '') ->
     # size is null (small), medium, full
