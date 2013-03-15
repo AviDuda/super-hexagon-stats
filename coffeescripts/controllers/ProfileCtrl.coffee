@@ -168,3 +168,25 @@ app.controller 'ProfileFriendsCtrl', ['$scope', '$rootScope', '$http', '$filter'
     $scope.oldChangeSorting.apply this, arguments
     $scope.setFilters()
 ]
+
+app.controller 'ProfileUserGroupsCtrl', ['$scope', '$http', 'TableSort', ($scope, $http, TableSort) ->
+  $scope.userGroupsLoading = true
+
+  $http.get("/api/usergroups/#{$scope.user._id}")
+    .success (data) ->
+      $scope.userGroups = data
+
+      $scope.pagination =
+        currentPage: 1
+        perPage: 10
+        numPages: ->
+          Math.ceil($scope.userGroups.groups.length / @perPage)
+
+      $scope.sort = {}
+      angular.extend $scope.sort, TableSort
+      $scope.sort.column = 'name'
+
+      $scope.userGroupsLoading = false
+    .error (data, status) ->
+      $scope.userGroupsLoading = false
+]

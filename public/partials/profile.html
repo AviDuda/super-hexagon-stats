@@ -19,7 +19,7 @@
   </div>
   <div class="row">
     <tabs>
-      <pane heading="{{user.username}}'s profile">
+      <pane heading="Leaderboard">
         <div ng-controller="ProfileLeaderboardCtrl">
           <h2>Leaderboard</h2>
           <div ui-if="leaderboardLoading" class="alert alert-info">Loading...</div>
@@ -45,8 +45,50 @@
                 </tr>
               </tbody>
             </table>
-           </div>
           </div>
+        </div>
+      </pane>
+      <pane heading="Groups">
+        <div ng-controller="ProfileUserGroupsCtrl">
+          <h2>Groups</h2>
+          <div ui-if="!userGroupsLoading && userGroups">
+            <p>
+              {{ user.username }} is a member of <strong>{{ userGroups.groupCount }}</strong> groups.
+              <span ui-if="userGroups.groupCount <= 1000 && userGroups.groupCount - userGroups.groups.length > 0">
+                <strong>{{ userGroups.groups.length }}</strong> of them were successfully loaded (Steam API isn't much reliable for groups or the remaining groups are private).</strong>
+              </span>
+            </p>
+          </div>
+          <div class="row" ui-if="pagination.numPages()">
+            <div class="span8">
+              <pagination num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
+            </div>
+          </div>
+          <div ui-if="userGroupsLoading" class="alert alert-info">Loading groups, this might take a while...</div>
+          <div ui-if="!userGroupsLoading && !userGroups" class="alert">Error while loading groups. Try to reload the page.</div>
+          <div ui-if="!userGroupsLoading && userGroups.groupCount == 0" class="alert alert-info">No groups found.</div>
+          <div ui-if="!userGroupsLoading && userGroups.groupCount > 1000" class="alert">Sorry, {{ user.username }} is a member of too many groups.</div>
+          <div ui-if="!userGroupsLoading && userGroups.groupCount > 0 && userGroups.groupCount <= 1000">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th ng-click="sort.changeSorting('name')" class="sortable"><i ng-class="sort.sortClass('name')"></i>Name</th>
+                  <th ng-click="sort.changeSorting('memberCount')" class="sortable"><i ng-class="sort.sortClass('memberCount')"></i>Members</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="entry in userGroups.groups | orderBy:sort.column:sort.descending | startFrom:(pagination.currentPage-1)*pagination.perPage | limitTo:pagination.perPage">
+                  <td>
+                    <a ng-href="#/gid/{{ entry.gid }}">
+                      <img ng-src="{{ getAvatar(entry.avatar) }}" class="avatar">{{ entry.name }}
+                    </a>
+                  </td>
+                  <td>{{ entry.memberCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </pane>
       <pane heading="Friends" ui-if="user.public">
         <div ng-controller="ProfileFriendsCtrl">

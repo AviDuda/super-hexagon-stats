@@ -2,15 +2,23 @@ GEM
   remote: https://rubygems.org/
   specs:
     backports (2.8.2)
+    better_errors (0.7.2)
+      coderay (>= 1.0.0)
+      erubis (>= 2.6.6)
+    binding_of_caller (0.7.1)
+      debug_inspector (>= 0.0.1)
     bson (1.8.2)
     bson_ext (1.8.2)
       bson (~> 1.8.2)
     bzip2-ruby (0.2.7)
+    coderay (1.0.9)
     coffee-script (2.2.0)
       coffee-script-source
       execjs
     coffee-script-source (1.4.0)
     daemons (1.1.9)
+    debug_inspector (0.0.2)
+    erubis (2.7.0)
     eventmachine (1.0.0)
     execjs (1.4.0)
       multi_json (~> 1.0)
@@ -52,6 +60,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  better_errors
+  binding_of_caller
   bson_ext
   coffee-script
   mongo

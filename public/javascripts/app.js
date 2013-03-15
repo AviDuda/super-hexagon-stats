@@ -697,6 +697,28 @@
     }
   ]);
 
+  app.controller('ProfileUserGroupsCtrl', [
+    '$scope', '$http', 'TableSort', function($scope, $http, TableSort) {
+      $scope.userGroupsLoading = true;
+      return $http.get("/api/usergroups/" + $scope.user._id).success(function(data) {
+        $scope.userGroups = data;
+        $scope.pagination = {
+          currentPage: 1,
+          perPage: 10,
+          numPages: function() {
+            return Math.ceil($scope.userGroups.groups.length / this.perPage);
+          }
+        };
+        $scope.sort = {};
+        angular.extend($scope.sort, TableSort);
+        $scope.sort.column = 'name';
+        return $scope.userGroupsLoading = false;
+      }).error(function(data, status) {
+        return $scope.userGroupsLoading = false;
+      });
+    }
+  ]);
+
   app.controller('SearchNicknameCtrl', [
     '$scope', '$rootScope', '$routeParams', '$location', 'User', function($scope, $rootScope, $routeParams, $location, User) {
       $rootScope.title = 'Search Results';
@@ -918,6 +940,13 @@
           return this.descending = false;
         }
       }
+    };
+  });
+
+  app.filter('startFrom', function() {
+    return function(input, start) {
+      start = +start;
+      return input.slice(start);
     };
   });
 

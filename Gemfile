@@ -22,3 +22,8 @@ gem 'coffee-script'
 #gem 'omniauth-steam'
 
 gem 'steam-condenser'
+
+group :development do
+  gem 'better_errors'
+  gem 'binding_of_caller'
+end
