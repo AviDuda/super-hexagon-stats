@@ -38,54 +38,47 @@ helpers do
   # @param [Fixnum] fetch_pages How many pages to fetch. Default -1 (all pages)
   # @return [String] JSON with the group info and members or error.
   def get_steam_group(type, groupid, fields = [:gid, :name, :avatar, :memberCount, :members], fetch_pages = -1)
+    current_page = 1
+    total_pages = 1
+
+    all_members = []
+
+    output = {}
+
+    groupid = groupid.gsub('[', '%5B').gsub(']', '%5D')
+
     begin
+      url = "http://steamcommunity.com/#{type}/#{groupid}/memberslistxml/?xml=1&p=#{current_page}"
+      response = Net::HTTP.get_response(URI(url))
 
-      current_page = 1
-      total_pages = 1
+      response = MultiXml.parse(response.body).to_hash
 
-      all_members = []
-
-      output = {}
-
-      groupid = groupid.gsub('[', '%5B').gsub(']', '%5D')
-
-      begin
-        url = "http://steamcommunity.com/#{type}/#{groupid}/memberslistxml/?xml=1&p=#{current_page}"
-        response = Net::HTTP.get_response(URI(url))
-
-        response = MultiXml.parse(response.body).to_hash
-
-        if current_page == 1
-          if fetch_pages == -1
-            total_pages = response['memberList']['totalPages'].to_i
-          else
-            total_pages = fetch_pages
-          end
-
-          total_pages = 9 if total_pages >= 10 # check 10k members, not more - it would be too slow
-
-          output[:gid] = response['memberList']['groupID64'] if fields.include? :gid
-          output[:name] = response['memberList']['groupDetails']['groupName'] if fields.include? :name
-          output[:avatar] = response['memberList']['groupDetails']['avatarIcon'][67..-5] if fields.include? :avatar
-          output[:memberCount] = response['memberList']['memberCount'].to_i if fields.include? :memberCount
+      if current_page == 1
+        if fetch_pages == -1
+          total_pages = response['memberList']['totalPages'].to_i
+        else
+          total_pages = fetch_pages
         end
 
-        all_members.push response['memberList']['members']['steamID64'] if fields.include? :members
+        total_pages = 9 if total_pages >= 10 # check 10k members, not more - it would be too slow
 
-        current_page += 1
-      end while current_page <= total_pages
-
-      if fields.include? :members
-        all_members.flatten!
-        output[:membersWithEntries] = settings.db.collection('users').find({ :_id => { '$in' => all_members } }, { fields: [:_id] }).to_a.map { |user| user['_id'] }
+        output[:gid] = response['memberList']['groupID64'] if fields.include? :gid
+        output[:name] = response['memberList']['groupDetails']['groupName'] if fields.include? :name
+        output[:avatar] = response['memberList']['groupDetails']['avatarIcon'][67..-5] if fields.include? :avatar
+        output[:memberCount] = response['memberList']['memberCount'].to_i if fields.include? :memberCount
       end
 
-      output # call MultiJson.dump on the returned hash
-    rescue Exception => e
-      raise e if settings.development?
-      status 404
-      { error: true }
+      all_members.push response['memberList']['members']['steamID64'] if fields.include? :members
+
+      current_page += 1
+    end while current_page <= total_pages
+
+    if fields.include? :members
+      all_members.flatten!
+      output[:membersWithEntries] = settings.db.collection('users').find({ :_id => { '$in' => all_members } }, { fields: [:_id] }).to_a.map { |user| user['_id'] }
     end
+
+    output # call MultiJson.dump on the returned hash
   end
 end
 
@@ -164,7 +157,7 @@ get '/api/profiles', provides: :json do
     else
       raise # all Steam IDs must be numbers
     end
-  rescue Exception => e
+  rescue => e
     raise e if settings.development?
     status 404
     MultiJson.dump({ error: true })
@@ -174,7 +167,7 @@ end
 get '/api/id/:customurl', provides: :json do
   begin
     { steamid: SteamId.resolve_vanity_url(params[:customurl]).to_s }.to_json
-  rescue Exception => e
+  rescue => e
     raise e if settings.development?
     status 404
     MultiJson.dump({ error: true })
@@ -186,7 +179,7 @@ get '/api/friends/:steamid', provides: :json do
     friends = WebApi.get(:json, 'ISteamUser', 'GetFriendList', '0001', steamid: params[:steamid])
     friends = MultiJson.load(friends)['friendslist']['friends'].map { |friend| friend['steamid'] }
     friends.to_json
-  rescue Exception => e
+  rescue => e
     raise e if settings.development?
     status 404
     { error: true }.to_json
@@ -215,9 +208,10 @@ get '/api/usergroups/:steamid', provides: :json do
             begin
               group = get_steam_group('gid', gid, [:gid, :name, :avatar, :memberCount], 1)
               groups_result[:groups].push group
-            rescue Exception => e
+            rescue => e
               puts "Exception while loading group ID #{gid}" if settings.development?
               # silently fail if it's a private group or if Steam API is derping
+              next
             end
           end
         end
@@ -227,15 +221,21 @@ get '/api/usergroups/:steamid', provides: :json do
     end
 
     groups_result.to_json
-  rescue Exception => e
+  rescue => e
     raise e if settings.development?
     status 404
-    { error: true }.to_json
+    MultiJson.dump({ error: true })
   end
 end
 
 get %r{/api/(?<type>(gid|groups))/(?<groupid>.*)}, provides: :json do |type, groupid|
-  MultiJson.dump get_steam_group(type, groupid)
+  begin
+    MultiJson.dump get_steam_group(type, groupid)
+  rescue => e
+    raise e if settings.development?
+    status 404
+    MultiJson.dump({ error: true })
+  end
 end
 
 get '/api/latestcommits', provides: :json do
@@ -244,7 +244,7 @@ get '/api/latestcommits', provides: :json do
     http.use_ssl = true
     response = http.get("/repos/TomasDuda/super-hexagon-stats/commits?per_page=5&client_id=#{ENV['GITHUB_OAUTH_CLIENT_ID']}&client_secret=#{ENV['GITHUB_OAUTH_CLIENT_SECRET']}")
     response.body
-  rescue Exception => e
+  rescue => e
     raise e if settings.development?
     status 404
     MultiJson.dump({ error: true })
