@@ -163,6 +163,10 @@ task 'hex:update_data' do
   db.collection('settings').update({ key: 'maintenance' }, { key: 'maintenance', value: false }, { upsert: true })
   db.collection('settings').update({ key: 'lastUpdate' }, { key: 'lastUpdate', value: Time.now.utc.to_s }, { upsert: true })
 
+  puts "(#{(Time.now - time_start).to_i} seconds) Repairing database."
+
+  db.command({ repairDatabase: 1 })
+
   puts "(#{(Time.now - time_start).to_i} seconds) Done! #{leaderboard_entries_count} leaderboard entries and #{steamids.count} users added to database."
 end
 
