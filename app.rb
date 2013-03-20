@@ -5,7 +5,6 @@ require 'sinatra/flash'
 require 'better_errors' if settings.development?
 
 require 'net/http'
-require 'net/https'
 
 require 'mongo'
 
@@ -82,41 +81,12 @@ helpers do
   end
 end
 
-#enable :sessions
 
-# Steam OAuth stuff - currently disabled
-
-#use OmniAuth::Builder do
-#  provider :steam, ENV['STEAM_API_KEY']
-#end
-
-# Support both GET and POST for callbacks
-#%w(get post).each do |method|
-#  send(method, '/auth/:provider/callback') do
-#    session[:user] = env['omniauth.auth'][:extra][:raw_info]
-#    redirect '/'
-#  end
-#end
 #
-#get '/auth/failure' do
-#  flash[:notice] = params[:message]
-#  redirect '/'
-#end
-
-# web stuff
-
-#before do
-#  @current_user = session[:user]
-#end
 
 get '/' do
   erb :layout
 end
-
-#get '/signout' do
-#  session[:user] = nil
-#  redirect '/'
-#end
 
 
 # API stuff

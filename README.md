@@ -4,19 +4,18 @@ Cool stats for [Terry Cavanagh](http://distractionware.com)'s game [Super Hexago
 I love this game and you should love it too.
 [Try the Flash version](http://www.kongregate.com/games/TerryCavanagh_B/hexagon) so you know how awesome it is (Super Hexagon is even better).
 
-It's a beta, more features are coming soon!
-
-Website is live on [superhexagonstats.herokuapp.com](http://superhexagonstats.herokuapp.com/).
+Website is live on [superhexagonstats.herokuapp.com](http://superhexagonstats.herokuapp.com/). If you have any ideas for new features, just [create a new issue](https://github.com/TomasDuda/super-hexagon-stats/issues/new).
 
 ## FAQ
 
+### Would it be possible to do something like this for another Steam game (or all other Steam games) with a leaderboard?
+
+Yes, but I don't want to simply because Valve now knows that e.g. group leaderboards are useful (thanks, [greuben](http://steamcommunity.com/id/greuben) :)) so I hope they will implement it as a native Steam feature.
+Or it may be available on awesome [sAPI](http://sapi.techieanalyst.net/) in the future, I don't know.
+
 ### Does it work in IE or similar ancient browsers?
 
-I have no idea.
-
-### You will steal my data if I disable NoScript for this site!
-
-Sure. Move along.
+I have no idea. If there are any problems, create a new issue or make a pull request with a fix.
 
 ### I have more questions!
 

@@ -17,10 +17,6 @@ gem 'sinatra-flash'
 
 gem 'coffee-script'
 
-#gem 'omniauth'
-#gem 'omniauth-openid'
-#gem 'omniauth-steam'
-
 gem 'steam-condenser'
 
 group :development do
