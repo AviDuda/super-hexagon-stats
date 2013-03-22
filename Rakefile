@@ -18,7 +18,7 @@ desc 'Updates the Super Hexagon data in the database.'
 task 'hex:update_data' do
   time_start = Time.now
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Connecting to database."
+  puts "(#{(Time.now - time_start).to_i} seconds) Connecting to the database."
 
   connection = MongoClient.from_uri(ENV['DATABASE_URL'])
 
@@ -59,8 +59,6 @@ task 'hex:update_data' do
 
     request_start = 1
 
-    # it's about 30 secs faster when using threads (with DB inserts), but it's much safer without threads
-
     while request_start < leaderboard.entry_count
       leaderboard_entries = []
 
@@ -79,7 +77,7 @@ task 'hex:update_data' do
       end
 
 
-      puts "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Saving #{request_start}-#{request_start + per_request} to database"
+      puts "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Saving #{request_start}-#{request_start + per_request} to the database"
 
       c.insert leaderboard_entries
 
@@ -139,9 +137,12 @@ task 'hex:update_data' do
 
   users.uniq!
 
-  print "(#{(Time.now - time_start).to_i} seconds) Adding user entries to database.\n"
+  print "(#{(Time.now - time_start).to_i} seconds) Adding user entries to the database.\n"
 
-  c.insert users
+  users.each_slice(10000).with_index do |users_slice, i|
+    puts "(#{(Time.now - time_start).to_i} seconds) Adding user slice #{i+1}/#{users.count / 10000 + 1} to the database."
+    c.insert users_slice
+  end
 
   puts "(#{(Time.now - time_start).to_i} seconds) Setting maintenance mode on."
 
@@ -167,7 +168,7 @@ task 'hex:update_data' do
 
   db.command({ repairDatabase: 1 })
 
-  puts "(#{(Time.now - time_start).to_i} seconds) Done! #{leaderboard_entries_count} leaderboard entries and #{steamids.count} users added to database."
+  puts "(#{(Time.now - time_start).to_i} seconds) Done! #{leaderboard_entries_count} leaderboard entries and #{steamids.count} users added to the database."
 end
 
 namespace :js do
