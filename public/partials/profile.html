@@ -37,10 +37,11 @@
               <tbody>
                 <tr ng-repeat="entry in leaderboard">
                   <td>
-                    <img ng-src="{{ getAchievementForTime(entry.time, entry.difficulty) }}" class="achievement" title="{{ achievements[entry.difficulty].name }} - {{ achievements[entry.difficulty].description }}">
+                    <img ui-if="entry.time >= 60" ng-src="{{ achievements[entry.difficulty].unlocked }}" class="achievement" tooltip-html-unsafe="<b>ACHIEVEMENT UNLOCKED</b><br>{{ achievements[entry.difficulty].name }} - {{ achievements[entry.difficulty].description }}">
+                    <img ui-if="entry.time == '-' || entry.time < 60" ng-src="{{ achievements[entry.difficulty].locked }}" class="achievement" tooltip-html-unsafe="<b>ACHIEVEMENT LOCKED</b><br>{{ achievements[entry.difficulty].name }} - {{ achievements[entry.difficulty].description }}">
                     {{ entry.difficulty }}
                   </td>
-                  <td>{{ entry.time.toFixed(2) }}</td>
+                  <td>{{ entry.time }}</td>
                   <td>{{ entry.rank }}</td>
                 </tr>
               </tbody>
@@ -59,9 +60,9 @@
               </span>
             </p>
           </div>
-          <div class="row" ui-if="pagination.numPages()">
+          <div class="row" ui-if="pagination.numPages() && pagination.numPages() > 1">
             <div class="span8">
-              <pagination num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
+              <pagination boundary-links="true" previous-text="&laquo;" next-text="&raquo;" num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
             </div>
           </div>
           <div ui-if="userGroupsLoading" class="alert alert-info">Loading groups, this might take a while...</div>
@@ -79,7 +80,7 @@
               <tbody>
                 <tr ng-repeat="entry in userGroups.groups | orderBy:sort.column:sort.descending | startFrom:(pagination.currentPage-1)*pagination.perPage | limitTo:pagination.perPage">
                   <td>
-                    <a ng-href="#/gid/{{ entry.gid }}">
+                    <a ng-href="#!/gid/{{ entry.gid }}">
                       <img ng-src="{{ getAvatar(entry.avatar) }}" class="avatar">{{ entry.name }}
                     </a>
                   </td>
@@ -129,7 +130,7 @@
               <tbody>
                 <tr ng-repeat="entry in leaderboard">
                   <td>
-                    <a ng-href="#/profiles/{{ entry.steamid }}"><img ng-src="{{ $root.getAvatar(entry.avatar) }}" class="avatar">{{ entry.username }}</a>
+                    <a ng-href="#!/profiles/{{ entry.steamid }}"><img ng-src="{{ $root.getAvatar(entry.avatar) }}" class="avatar">{{ entry.username }}</a>
                     <comparison ng-include="'comparison/default'" steamid="{{ entry.steamid }}" username="{{ entry.username }}" avatar="{{ entry.avatar }}"></comparison>
                   </td>
                   <td>{{ entry.difficulty }}</td>

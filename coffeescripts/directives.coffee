@@ -5,9 +5,9 @@ app.directive 'activelink', ['$location', ($location) ->
     scope.$watch '$location.path()', (locationPath) ->
       # if the tag has an attribute noactivelinkindex, don't search just for indexOf, locations must be the same (useful for dropdowns in menu etc.)
       if attrs.noactivelinkindex?
-        isCorrectLocation = attrs.activelink.substring(1) == locationPath
+        isCorrectLocation = attrs.activelink.substring(2) == locationPath
       else
-        isCorrectLocation = locationPath.indexOf(attrs.activelink.substring(1)) > -1
+        isCorrectLocation = locationPath.indexOf(attrs.activelink.substring(2)) > -1
 
       if attrs.activelink.length > 0 and isCorrectLocation
         element.addClass('active')

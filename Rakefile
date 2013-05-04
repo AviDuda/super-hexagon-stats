@@ -2,7 +2,7 @@ require 'sinatra'
 require 'mongo'
 require 'retriable'
 require 'coffee-script'
-require 'steam-condenser'
+require 'steam-condenser/community'
 require 'multi_json'
 
 env_variables_file = File.join(settings.root, 'env_variables.rb')
@@ -62,14 +62,13 @@ task 'hex:update_data' do
     while request_start < leaderboard.entry_count
       leaderboard_entries = []
 
-      puts "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Loading #{request_start}-#{request_start + per_request}"
+      puts "(#{(Time.now - time_start).to_i} seconds) #{difficulty}: Loading #{request_start}-#{request_start + per_request} / #{leaderboard.entry_count}"
       retriable tries: 3, interval: 5 do
         leaderboard.entry_range(request_start, request_start + per_request).compact.each do |entry|
-          score = ('%.2f' % (entry.score / 60.00))
           leaderboard_entries << {
             difficulty: difficulty,
             steamid: entry.steam_id.steam_id64.to_s,
-            time: score.to_f,
+            time: entry.score / 60 + (entry.score % 60 / 100.00),
             rank: entry.rank
           }
           steamids << entry.steam_id.steam_id64.to_s

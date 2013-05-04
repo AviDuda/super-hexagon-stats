@@ -9,14 +9,17 @@
 </div>
 
 <div class="page-header">
-  <h2>Top 10 players</h2>
+  <h2>
+    Top 10 players
+    <small>+ some cheaters, laugh at them</small>
+  </h2>
 </div>
 
 <div class="row" ng-repeat="difficultyRow in difficultyRows">
   <div class="span4" ng-repeat="difficulty in difficultyRow">
     <div>
       <div class="pull-right" style="padding-top: 5px;">
-        <a class="btn" ng-href="#/leaderboard/{{ difficulty.replace(' ', '_') }}">Show all</a>
+        <a class="btn" ng-href="#!/leaderboard/{{ difficulty.replace(' ', '_') }}">Show all</a>
       </div>
       <h3>{{difficulty}}</h3>
     </div>
@@ -35,7 +38,7 @@
           <tr ng-repeat="entry in top10[difficulty]">
             <td>{{ $index + 1 }}</td>
             <td>
-              <a ng-href="#/profiles/{{ entry.steamid }}">
+              <a ng-href="#!/profiles/{{ entry.steamid }}">
                 <img ng-src="{{ $root.getAvatar(top10Users[entry.steamid].avatar) }}" class="avatar">{{ top10Users[entry.steamid].username }}
               </a>
               <comparison ng-include="'comparison/default'" steamid="{{ entry.steamid }}" username="{{ top10Users[entry.steamid].username }}" avatar="{{ top10Users[entry.steamid].avatar }}"></comparison>

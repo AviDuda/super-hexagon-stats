@@ -21,7 +21,7 @@
     </thead>
     <tbody>
       <tr ng-repeat="(steamid, user) in users">
-        <td><a ng-href="#/profiles/{{ steamid }}"><img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a></td>
+        <td><a ng-href="#!/profiles/{{ steamid }}"><img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a></td>
         <td ng-repeat="difficulty in $root.difficulties">{{ user.leaderboard[difficulty].time.toFixed(2) || '-' }}</td>
         <td><a ng-click="$root.comparisonRemove(steamid)"><i class="icon-remove" title="Remove user {{ user.username }} from comparison"></i></a></td>
       </tr>

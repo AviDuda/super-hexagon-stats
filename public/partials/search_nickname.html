@@ -7,7 +7,7 @@
 
 <div class="row" ui-if="pagination.numPages()">
   <div class="span8">
-    <pagination num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
+    <pagination boundary-links="true" previous-text="&laquo;" next-text="&raquo;" num-pages="pagination.numPages()" current-page="pagination.currentPage" max-size="10"></pagination>
   </div>
 </div>
 
@@ -28,7 +28,7 @@
         </thead>
         <tbody>
           <tr ng-repeat="user in users">
-            <td><a ng-href="#/profiles/{{ user._id }}"><img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a></td>
+            <td><a ng-href="#!/profiles/{{ user._id }}"><img ng-src="{{ $root.getAvatar(user.avatar) }}" class="avatar">{{ user.username }}</a></td>
           </tr>
         </tbody>
       </table>

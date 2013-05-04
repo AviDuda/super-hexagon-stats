@@ -39,7 +39,7 @@ html, body {
   margin-bottom: 30px;
 }
 
-.sortable {
+.sortable, .dropdown-toggle, .nav-tabs, .pagination a {
   cursor: pointer;
 }
 
@@ -48,6 +48,11 @@ html, body {
 }
 
 .avatar {
+  margin-right: 10px;
+}
+
+#signed_in_avatar {
+  width: 16px;
   margin-right: 10px;
 }
 
@@ -70,4 +75,8 @@ html, body {
 
 .no-js #wrap, .no-js #footer {
   display: none;
+}
+
+.search-form {
+  padding: 15px 15px 0 15px;
 }

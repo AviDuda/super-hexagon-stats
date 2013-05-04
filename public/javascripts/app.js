@@ -5,7 +5,8 @@
   app = angular.module('hexagonStats', ['ui', 'ui.bootstrap', 'dbResourceHttp']);
 
   app.config([
-    '$routeProvider', function($routeProvider) {
+    '$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
+      $locationProvider.hashPrefix('!');
       return $routeProvider.when('/', {
         templateUrl: 'partials/home.html',
         controller: 'HomeCtrl'
@@ -528,7 +529,26 @@
           _id: 0
         }
       }, function(data) {
+        var difficulties_found, difficulty, _i, _len, _ref;
         $scope.leaderboard = data;
+        if (data.length > 0 && data.length !== 6) {
+          difficulties_found = data.map(function(entry) {
+            return entry.difficulty;
+          });
+          _ref = $rootScope.difficulties;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            difficulty = _ref[_i];
+            if (difficulties_found.indexOf(difficulty) === -1) {
+              $scope.leaderboard.push({
+                difficulty: difficulty,
+                steamid: data[0].steamid,
+                rank: '-',
+                time: '-'
+              });
+            }
+          }
+        }
+        $scope.setFilters();
         return $scope.leaderboardLoading = false;
       }, function(data, status) {
         return $scope.leaderboardLoading = false;
@@ -539,7 +559,6 @@
       $scope.setFilters = function() {
         return $scope.leaderboard = $filter('orderBy')($scope.leaderboard, $scope.sort.column, $scope.sort.descending);
       };
-      $scope.setFilters();
       $scope.oldChangeSorting = $scope.sort.changeSorting;
       $scope.sort.changeSorting = function() {
         $scope.oldChangeSorting.apply(this, arguments);
@@ -838,9 +857,9 @@
           return scope.$watch('$location.path()', function(locationPath) {
             var isCorrectLocation;
             if (attrs.noactivelinkindex != null) {
-              isCorrectLocation = attrs.activelink.substring(1) === locationPath;
+              isCorrectLocation = attrs.activelink.substring(2) === locationPath;
             } else {
-              isCorrectLocation = locationPath.indexOf(attrs.activelink.substring(1)) > -1;
+              isCorrectLocation = locationPath.indexOf(attrs.activelink.substring(2)) > -1;
             }
             if (attrs.activelink.length > 0 && isCorrectLocation) {
               return element.addClass('active');

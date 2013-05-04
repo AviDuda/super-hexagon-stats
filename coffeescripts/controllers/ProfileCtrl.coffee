@@ -30,6 +30,21 @@ app.controller 'ProfileLeaderboardCtrl', ['$scope', '$rootScope', '$filter', 'Le
     { sort: { difficulty: 1 }, fields: { _id: 0 } }
     (data) ->
       $scope.leaderboard = data
+
+      # add all remaining difficulties to the leaderboard if not found
+      if data.length > 0 and data.length != 6
+        difficulties_found = data.map (entry) -> entry.difficulty
+        for difficulty in $rootScope.difficulties
+          if difficulties_found.indexOf(difficulty) == -1
+            $scope.leaderboard.push {
+              difficulty: difficulty,
+              steamid: data[0].steamid,
+              rank: '-',
+              time: '-'
+            }
+
+      $scope.setFilters()
+
       $scope.leaderboardLoading = false
     (data, status) ->
       $scope.leaderboardLoading = false
@@ -41,8 +56,6 @@ app.controller 'ProfileLeaderboardCtrl', ['$scope', '$rootScope', '$filter', 'Le
 
   $scope.setFilters = () ->
     $scope.leaderboard = $filter('orderBy')($scope.leaderboard, $scope.sort.column, $scope.sort.descending)
-
-  $scope.setFilters()
 
   # change filters after sorting
   $scope.oldChangeSorting = $scope.sort.changeSorting

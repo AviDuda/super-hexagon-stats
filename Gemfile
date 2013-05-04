@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '1.9.3'
+ruby '2.0.0'
 
 gem 'rake'
 
@@ -13,9 +13,13 @@ gem 'bson_ext'
 
 gem 'sinatra'
 gem 'sinatra-contrib'
-gem 'sinatra-flash'
 
 gem 'coffee-script'
+
+gem 'bzip2-ruby', git: 'git://github.com/brianmario/bzip2-ruby.git'
+
+gem 'omniauth-openid', git: 'git://github.com/intridea/omniauth-openid.git'
+gem 'omniauth-steam', git: 'git://github.com/reu/omniauth-steam.git'
 
 gem 'steam-condenser'
 

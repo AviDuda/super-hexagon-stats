@@ -1,6 +1,5 @@
 require 'sinatra'
 require 'sinatra/respond_with'
-require 'sinatra/flash'
 
 require 'better_errors' if settings.development?
 
@@ -10,11 +9,11 @@ require 'mongo'
 
 require 'multi_json'
 
-#require 'omniauth'
-#require 'omniauth-openid'
-#require 'omniauth-steam'
+require 'omniauth'
+require 'omniauth-openid'
+require 'omniauth-steam'
 
-require 'steam-condenser'
+require 'steam-condenser/community'
 require 'retriable'
 
 env_variables_file = File.join(settings.root, 'env_variables.rb')
@@ -29,6 +28,13 @@ end
 set :db, MongoClient.from_uri(ENV['DATABASE_URL']).db(ENV['DATABASE_NAME'])
 
 WebApi.api_key = ENV['STEAM_API_KEY']
+
+enable :sessions
+set :session_secret, ENV['SESSION_KEY']
+
+use OmniAuth::Builder do
+  provider :steam, ENV['STEAM_API_KEY']
+end
 
 helpers do
   # @param [String] type Type of the request ('gid' or 'groups')
@@ -82,10 +88,37 @@ helpers do
 end
 
 
-#
+%w(get post).each do |method|
+  send(method, '/auth/:provider/callback') do
+    begin
+      session[:user] = env['omniauth.auth'][:extra][:raw_info]
+      redirect '/'
+    rescue StandardError
+      redirect '/'
+    end
+  end
+end
+
+get '/auth/failure' do
+  redirect '/'
+end
+
 
 get '/' do
-  erb :layout
+  if params[:_escaped_fragment_]
+    # AJAX crawling - see documentation: https://developers.google.com/webmasters/ajax-crawling/docs/specification
+    redirect "/#!/#{params[:_escaped_fragment_]}"
+  else
+    if session[:user]
+      @current_user = session[:user]
+    end
+    erb :layout
+  end
+end
+
+get '/signout' do
+  session[:user] = nil
+  redirect '/'
 end
 
 

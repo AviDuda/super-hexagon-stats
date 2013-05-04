@@ -4,13 +4,14 @@
     <meta charset="utf-8">
     <title ng-bind-template="{{$root.title}} | Super Hexagon stats">Super Hexagon stats</title>
     <meta name="description" content="Leaderboard and other statistics for the Steam version of Terry Cavanagh's game Super Hexagon.">
+    <meta name="fragment" content="!">
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
     <link rel="stylesheet" href="css/style.css">
     <script type="text/javascript" src="javascripts/modernizr.js"></script>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.4/angular.min.js"></script>
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.min.js"></script>
     <script type="text/javascript" src="javascripts/angular-ui.min.js"></script>
-    <script type="text/javascript" src="javascripts/angular-ui-bootstrap-tpls-0.1.0.min.js"></script>
+    <script type="text/javascript" src="javascripts/angular-ui-bootstrap-tpls-0.3.0.js"></script>
     <script type="text/javascript" src="javascripts/dbResourceHttp.js"></script>
     <script type="text/javascript" src="javascripts/app.js"></script>
   </head>
@@ -35,39 +36,39 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button>
-            <a class="brand" href="#/">Super Hexagon stats</a>
+            <a class="brand" href="#!/">Super Hexagon stats</a>
 
             <div class="nav-collapse collapse">
               <ul class="nav">
-                <li activelink="#/" noactivelinkindex><a href="#/">Home</a></li>
-                <li class="dropdown" activelink="#/leaderboard/">
+                <li activelink="#!/" noactivelinkindex><a href="#!/">Home</a></li>
+                <li class="dropdown" activelink="#!/leaderboard/">
                   <a class="dropdown-toggle">
                     Leaderboard
                     <b class="caret"></b>
                   </a>
                   <ul class="dropdown-menu">
-                    <li activelink="#/leaderboard/Hexagon" noactivelinkindex><a href="#/leaderboard/Hexagon">Hexagon</a></li>
-                    <li activelink="#/leaderboard/Hexagoner"><a href="#/leaderboard/Hexagoner">Hexagoner</a></li>
-                    <li activelink="#/leaderboard/Hexagonest"><a href="#/leaderboard/Hexagonest">Hexagonest</a></li>
-                    <li activelink="#/leaderboard/Hyper_Hexagon" noactivelinkindex>
-                      <a href="#/leaderboard/Hyper_Hexagon">Hyper Hexagon</a></li>
-                    <li activelink="#/leaderboard/Hyper_Hexagoner">
-                      <a href="#/leaderboard/Hyper_Hexagoner">Hyper Hexagoner</a></li>
-                    <li activelink="#/leaderboard/Hyper_Hexagonest">
-                      <a href="#/leaderboard/Hyper_Hexagonest">Hyper Hexagonest</a></li>
+                    <li activelink="#!/leaderboard/Hexagon" noactivelinkindex><a href="#!/leaderboard/Hexagon">Hexagon</a></li>
+                    <li activelink="#!/leaderboard/Hexagoner"><a href="#!/leaderboard/Hexagoner">Hexagoner</a></li>
+                    <li activelink="#!/leaderboard/Hexagonest"><a href="#!/leaderboard/Hexagonest">Hexagonest</a></li>
+                    <li activelink="#!/leaderboard/Hyper_Hexagon" noactivelinkindex>
+                      <a href="#!/leaderboard/Hyper_Hexagon">Hyper Hexagon</a></li>
+                    <li activelink="#!/leaderboard/Hyper_Hexagoner">
+                      <a href="#!/leaderboard/Hyper_Hexagoner">Hyper Hexagoner</a></li>
+                    <li activelink="#!/leaderboard/Hyper_Hexagonest">
+                      <a href="#!/leaderboard/Hyper_Hexagonest">Hyper Hexagonest</a></li>
                   </ul>
                 </li>
-                <li activelink="#/stats"><a href="#/stats">Stats</a></li>
+                <li activelink="#!/stats"><a href="#!/stats">Stats</a></li>
               </ul>
               <ul class="nav pull-right">
-                <li class="dropdown" activelink="#/compare/">
+                <li class="dropdown" activelink="#!/compare/">
                   <a class="dropdown-toggle">
                     Compare ({{ $root.comparison.length }})
                     <b class="caret"></b>
                   </a>
                   <ul class="dropdown-menu">
                     <li>
-                      <a href="#/compare">
+                      <a href="#!/compare">
                         <span ui-if="$root.comparison.length > 0">Compare users</span>
                         <span ui-if="!$root.comparison || $root.comparison.length == 0">
                           No users to compare! Click on <i class="icon-plus"></i> next to the name to add it.
@@ -79,18 +80,34 @@
                     <li class="dropdown-submenu" ng-repeat="entry in $root.comparison">
                       <a class="dropdown-toggle">{{ entry.username }}</a>
                       <ul class="dropdown-menu">
-                        <li><a ng-href="#/profiles/{{ entry.steamid }}">View profile</a></li>
+                        <li><a ng-href="#!/profiles/{{ entry.steamid }}">View profile</a></li>
                         <li><a ng-click="$root.comparisonRemove(entry.steamid)">Remove</a></li>
                       </ul>
                     </li>
                   </ul>
                 </li>
+                <li class="dropdown">
+                  <a class="dropdown-toggle">
+                    Search
+                    <b class="caret"></b>
+                  </a>
+                  <div class="dropdown-menu search-form">
+                    <form>
+                      <select ng-model="$root.search.type" ng-options="type as val.label group by val.group for (type, val) in $root.search.options"></select>
+                      <input type="text" placeholder="{{ $root.search.options[$root.search.type].placeholder || $root.search.options[$root.search.type].label }}" ng-model="$root.search.text">
+                      <input type="submit" value="Search" class="btn" ng-click="$root.search.doSearch()">
+                    </form>
+                  </div>
+                </li>
                 <li class="divider-vertical"></li>
-                <form class="navbar-form pull-right">
-                  <select ng-model="$root.search.type" ng-options="type as val.label group by val.group for (type, val) in $root.search.options"></select>
-                  <input type="text" placeholder="{{ $root.search.options[$root.search.type].placeholder || $root.search.options[$root.search.type].label }}" ng-model="$root.search.text">
-                  <input type="submit" value="Search" class="btn" ng-click="$root.search.doSearch()">
-                </form>
+                <% if @current_user %>
+                  <li><a href="#!/profiles/<%= @current_user.steamid %>"><img src="<%= @current_user.avatar %>" id="signed_in_avatar"><%= @current_user.personaname %></a></li>
+                  <li><a href="/signout" class="signout">Sign out</a></li>
+                <% else %>
+                  <li>
+                    <a href="/auth/steam"><img src="http://cdn.steamcommunity.com/public/images/signinthroughsteam/sits_small.png"></a>
+                  </li>
+                <% end %>
               </ul>
             </div>
           </div>

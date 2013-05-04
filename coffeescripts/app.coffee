@@ -1,7 +1,9 @@
 "use strict"
 
 app = angular.module 'hexagonStats', ['ui', 'ui.bootstrap', 'dbResourceHttp']
-app.config ['$routeProvider', ($routeProvider) ->
+app.config ['$routeProvider', '$locationProvider', ($routeProvider, $locationProvider) ->
+  $locationProvider.hashPrefix '!'
+
   $routeProvider
     .when('/', {templateUrl: 'partials/home.html', controller: 'HomeCtrl'})
     .when('/leaderboard/:leaderboard', {templateUrl: 'partials/leaderboard.html', controller: 'LeaderboardCtrl'})
