@@ -92,7 +92,7 @@ end
   send(method, '/auth/:provider/callback') do
     begin
       session[:user] = env['omniauth.auth'][:extra][:raw_info]
-      redirect '/'
+      redirect "/#!/profiles/#{session[:user].steamid}"
     rescue StandardError
       redirect '/'
     end
