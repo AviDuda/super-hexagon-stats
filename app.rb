@@ -272,6 +272,10 @@ get %r{/api/db/(?<collection>(leaderboard|users|settings))$}, provides: :json do
     find_options[:fields] = MultiJson.load params[:f]
   end
 
+  unless params[:q]
+    params[:q] = '{}'
+  end
+
   query = settings.db.collection(collection).find(MultiJson.load(params[:q]), find_options)
 
   if params[:c] then

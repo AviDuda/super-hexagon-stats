@@ -45,9 +45,14 @@ task 'hex:update_data' do
   leaderboards = GameLeaderboard.leaderboards('SuperHexagon').compact
 
   leaderboards.each do |leaderboard|
+    # ignore any leaderboards which don't start with LEADERBOARD_
+    unless leaderboard.name.start_with? 'LEADERBOARD_'
+      next
+    end
+
     # change leaderboard name from LEADERBOARD_HEXAGON to Hexagon etc.
     difficulty = leaderboard.name[12..-1]
-    if difficulty[0..4] == 'HYPER'
+    if difficulty.start_with? 'HYPER'
       difficulty = 'Hyper H' + difficulty[6..-1].downcase
     else
       difficulty = 'H' + difficulty[1..-1].downcase
@@ -158,14 +163,14 @@ task 'hex:update_data' do
   db.rename_collection 'leaderboard_update', 'leaderboard'
   db.rename_collection 'users_update', 'users'
 
+  puts "(#{(Time.now - time_start).to_i} seconds) Repairing database."
+
+  db.command({ repairDatabase: 1 })
+
   puts "(#{(Time.now - time_start).to_i} seconds) Setting maintenance mode off."
 
   db.collection('settings').update({ key: 'maintenance' }, { key: 'maintenance', value: false }, { upsert: true })
   db.collection('settings').update({ key: 'lastUpdate' }, { key: 'lastUpdate', value: Time.now.utc.to_s }, { upsert: true })
-
-  puts "(#{(Time.now - time_start).to_i} seconds) Repairing database."
-
-  db.command({ repairDatabase: 1 })
 
   puts "(#{(Time.now - time_start).to_i} seconds) Done! #{leaderboard_entries_count} leaderboard entries and #{steamids.count} users added to the database."
 end

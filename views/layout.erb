@@ -86,7 +86,7 @@
                     </li>
                   </ul>
                 </li>
-                <li class="dropdown">
+                <li class="dropdown" activelink="#!/search">
                   <a class="dropdown-toggle">
                     Search
                     <b class="caret"></b>
@@ -101,7 +101,7 @@
                 </li>
                 <li class="divider-vertical"></li>
                 <% if @current_user %>
-                  <li><a href="#!/profiles/<%= @current_user.steamid %>"><img src="<%= @current_user.avatar %>" id="signed_in_avatar"><%= @current_user.personaname %></a></li>
+                  <li activelink="#!/profiles/<%= @current_user.steamid %>"><a href="#!/profiles/<%= @current_user.steamid %>"><img src="<%= @current_user.avatar %>" id="signed_in_avatar"><%= @current_user.personaname %></a></li>
                   <li><a href="/signout" class="signout">Sign out</a></li>
                 <% else %>
                   <li>
