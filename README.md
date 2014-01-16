@@ -21,7 +21,7 @@ I have no idea. If there are any problems, create a new issue or make a pull req
 
 [Tweet me](https://twitter.com/tomasduda) or [add me on Steam](http://steamcommunity.com/id/TimmyCZ).
 
-Oh, also buy our game [Faerie Solitaire](http://store.steampowered.com/app/38600/). It's required to use Super Hexagon stats... Ok, just kidding. But try it.
+Oh, also buy our game [Euro Truck Simulator 2](http://store.steampowered.com/app/227300/). It's required to use Super Hexagon stats... Ok, just kidding. But try it.
 
 ## Technical stuff
 
